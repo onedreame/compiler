@@ -1,1 +1,0 @@
-/usr/bin/c++   -g   CMakeFiles/sc_complier.dir/main.cpp.o  -o sc_complier 
