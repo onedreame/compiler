@@ -25,8 +25,8 @@
       <file leaf-file-name="Token.h" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/include/Token.h">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2682">
-              <caret line="157" column="22" lean-forward="false" selection-start-line="157" selection-start-column="22" selection-end-line="157" selection-end-column="22" />
+            <state relative-caret-position="234">
+              <caret line="21" column="32" lean-forward="true" selection-start-line="21" selection-start-column="32" selection-end-line="21" selection-end-column="32" />
               <folding />
             </state>
           </provider>
@@ -332,12 +332,12 @@
       <workItem from="1519813061180" duration="9924000" />
       <workItem from="1519823258190" duration="1853000" />
       <workItem from="1519825230608" duration="1140000" />
-      <workItem from="1519826393502" duration="56000" />
+      <workItem from="1519826393502" duration="639000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="254907000" />
+    <option name="totallyTimeSpent" value="255490000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="64" y="17" width="1297" height="780" extended-state="6" />
@@ -741,8 +741,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/include/Token.h">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2682">
-          <caret line="157" column="22" lean-forward="false" selection-start-line="157" selection-start-column="22" selection-end-line="157" selection-end-column="22" />
+        <state relative-caret-position="234">
+          <caret line="21" column="32" lean-forward="true" selection-start-line="21" selection-start-column="32" selection-end-line="21" selection-end-column="32" />
           <folding />
         </state>
       </provider>
