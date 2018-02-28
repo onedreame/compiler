@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="sc_complier"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/home/yk/compiler/sc_complier/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/home/yk/compiler/sc_complier/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/home/yk/compiler/sc_complier/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="sc_complier">
+				<Option output="/home/yk/compiler/sc_complier/cmake-build-debug/sc_complier" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/yk/compiler/sc_complier/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/include/c++/4.8"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/4.8"/>
+					<Add directory="/usr/include/c++/4.8/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/4.8/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 sc_complier"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="sc_complier/fast">
+				<Option output="/home/yk/compiler/sc_complier/cmake-build-debug/sc_complier" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/home/yk/compiler/sc_complier/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/usr/include/c++/4.8"/>
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/4.8"/>
+					<Add directory="/usr/include/c++/4.8/backward"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/4.8/include"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/4.8/include-fixed"/>
+					<Add directory="/usr/include/x86_64-linux-gnu"/>
+					<Add directory="/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 sc_complier/fast"/>
+					<CompileFile command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j2 -f &quot;/home/yk/compiler/sc_complier/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/home/yk/compiler/sc_complier/main.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/syntax_analysier/Stack.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/syntax_analysier/Stack.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/syntax_analysier/Symbol.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/syntax_analysier/Symbol.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/syntax_analysier/external_declaration.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/syntax_analysier/syn_const.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/syntax_analysier/syntax_analysier.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/syntax_analysier/syntax_analysier.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/DynArray.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/DynArray.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/DynArrayDef.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/DynString.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/DynString.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/DynStringDef.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/Exception_Handler.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/Exception_Handler.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/TKTable.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/TkTable.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/TkWordDef.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/TokenCode.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/TokenParser.cpp">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/TokenParser.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/token_analysier/global_var.h">
+			<Option target="sc_complier"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/sc_complier/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
