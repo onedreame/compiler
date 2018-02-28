@@ -13,10 +13,10 @@
 #include <fstream>
 #include <memory>
 #include "enumerate.h"
-#include "macro.h"
-
+//#include "macro.h"
+class MacroPreprocessor;
 namespace DataStruct {
-    using File=struct{
+    struct File{
         std::shared_ptr<std::ifstream> file;  // stream backed by FILE *
         std::string p;     // stream backed by string
         std::string name;  //文件名
@@ -57,9 +57,9 @@ namespace DataStruct {
         bool oldstyle;
     } Type;
 
-    using Token= struct token{
-        DataStruct::TOKEN_TYPE kind;
-        std::shared_ptr<DataStruct::File> file;
+    struct Token{
+        TOKEN_TYPE kind;
+        std::shared_ptr<File> file;
         int line=1;
         int column=1;
         bool space= false;   // 该token是否有个前导空格
@@ -67,7 +67,7 @@ namespace DataStruct {
         int count=0;    // token number in a file, counting from 0.
         std::set<std::string > hideset; // 宏展开
         // TKEYWORD
-        DataStruct::AST_TYPE id;
+        AST_TYPE id;
         // TSTRING or TCHAR
         std::shared_ptr<std::string> sval;
         int c='\0';
@@ -75,11 +75,11 @@ namespace DataStruct {
         // TMACRO_PARAM
         bool is_vararg= false;   //是否是可变参数宏
         int position=-1;        //对于函数宏，代表该token是第几个参数
-        token()= default;
+        Token()= default;
 
-        token(DataStruct::TOKEN_TYPE id,std::string str="",int c='\0',DataStruct::ENCODE enc=DataStruct::ENCODE::ENC_NONE):kind(id),sval(std::make_shared<std::string>(str)),c(c),enc(enc){}
-        token(DataStruct::TOKEN_TYPE id, bool is_var= false,int pos=-1):kind(id),is_vararg(is_var),position(pos){}
-        token(DataStruct::TOKEN_TYPE id,DataStruct::AST_TYPE id2):kind(id),id(id2){}
+        Token(DataStruct::TOKEN_TYPE id,std::string str="",int c='\0',DataStruct::ENCODE enc=DataStruct::ENCODE::ENC_NONE):kind(id),sval(std::make_shared<std::string>(str)),c(c),enc(enc){}
+        Token(DataStruct::TOKEN_TYPE id, bool is_var= false,int pos=-1):kind(id),is_vararg(is_var),position(pos){}
+        Token(DataStruct::TOKEN_TYPE id,DataStruct::AST_TYPE id2):kind(id),id(id2){}
     };
 
     //条件宏的展开用的结构体：
@@ -105,6 +105,7 @@ namespace DataStruct {
     public:
         Macro &operator=(const Macro&t) = default;
         Macro(const Macro&)= default;
+        Macro()= default;
         Macro &operator=(Macro&&macro1)noexcept{
             kind=macro1.getKind();
             nargs=macro1.getNargs();

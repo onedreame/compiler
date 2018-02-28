@@ -14,7 +14,6 @@ set(CMAKE_DEPENDS_CHECK_CXX
   "/home/yk/compiler/ycc/src/parser.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/parser.cpp.o"
   "/home/yk/compiler/ycc/src/path.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/path.cpp.o"
   "/home/yk/compiler/ycc/src/utils.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/utils.cpp.o"
-  "/home/yk/compiler/ycc/test/funcTest.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/test/funcTest.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

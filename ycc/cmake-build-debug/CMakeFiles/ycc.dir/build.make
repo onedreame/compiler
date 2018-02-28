@@ -57,33 +57,9 @@ include CMakeFiles/ycc.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/ycc.dir/flags.make
 
-CMakeFiles/ycc.dir/main.cpp.o: CMakeFiles/ycc.dir/flags.make
-CMakeFiles/ycc.dir/main.cpp.o: ../main.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/ycc.dir/main.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/main.cpp.o -c /home/yk/compiler/ycc/main.cpp
-
-CMakeFiles/ycc.dir/main.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/main.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/main.cpp > CMakeFiles/ycc.dir/main.cpp.i
-
-CMakeFiles/ycc.dir/main.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/main.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/main.cpp -o CMakeFiles/ycc.dir/main.cpp.s
-
-CMakeFiles/ycc.dir/main.cpp.o.requires:
-
-.PHONY : CMakeFiles/ycc.dir/main.cpp.o.requires
-
-CMakeFiles/ycc.dir/main.cpp.o.provides: CMakeFiles/ycc.dir/main.cpp.o.requires
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/main.cpp.o.provides.build
-.PHONY : CMakeFiles/ycc.dir/main.cpp.o.provides
-
-CMakeFiles/ycc.dir/main.cpp.o.provides.build: CMakeFiles/ycc.dir/main.cpp.o
-
-
 CMakeFiles/ycc.dir/src/buffer.cpp.o: CMakeFiles/ycc.dir/flags.make
 CMakeFiles/ycc.dir/src/buffer.cpp.o: ../src/buffer.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/ycc.dir/src/buffer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/ycc.dir/src/buffer.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/buffer.cpp.o -c /home/yk/compiler/ycc/src/buffer.cpp
 
 CMakeFiles/ycc.dir/src/buffer.cpp.i: cmake_force
@@ -107,7 +83,7 @@ CMakeFiles/ycc.dir/src/buffer.cpp.o.provides.build: CMakeFiles/ycc.dir/src/buffe
 
 CMakeFiles/ycc.dir/src/error.cpp.o: CMakeFiles/ycc.dir/flags.make
 CMakeFiles/ycc.dir/src/error.cpp.o: ../src/error.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/ycc.dir/src/error.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/ycc.dir/src/error.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/error.cpp.o -c /home/yk/compiler/ycc/src/error.cpp
 
 CMakeFiles/ycc.dir/src/error.cpp.i: cmake_force
@@ -129,57 +105,57 @@ CMakeFiles/ycc.dir/src/error.cpp.o.provides: CMakeFiles/ycc.dir/src/error.cpp.o.
 CMakeFiles/ycc.dir/src/error.cpp.o.provides.build: CMakeFiles/ycc.dir/src/error.cpp.o
 
 
-CMakeFiles/ycc.dir/src/Token.cpp.o: CMakeFiles/ycc.dir/flags.make
-CMakeFiles/ycc.dir/src/Token.cpp.o: ../src/Token.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/ycc.dir/src/Token.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/Token.cpp.o -c /home/yk/compiler/ycc/src/Token.cpp
+CMakeFiles/ycc.dir/src/Lex.cpp.o: CMakeFiles/ycc.dir/flags.make
+CMakeFiles/ycc.dir/src/Lex.cpp.o: ../src/Lex.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/ycc.dir/src/Lex.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/Lex.cpp.o -c /home/yk/compiler/ycc/src/Lex.cpp
 
-CMakeFiles/ycc.dir/src/Token.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/Token.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/Token.cpp > CMakeFiles/ycc.dir/src/Token.cpp.i
+CMakeFiles/ycc.dir/src/Lex.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/Lex.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/Lex.cpp > CMakeFiles/ycc.dir/src/Lex.cpp.i
 
-CMakeFiles/ycc.dir/src/Token.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/Token.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/Token.cpp -o CMakeFiles/ycc.dir/src/Token.cpp.s
+CMakeFiles/ycc.dir/src/Lex.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/Lex.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/Lex.cpp -o CMakeFiles/ycc.dir/src/Lex.cpp.s
 
-CMakeFiles/ycc.dir/src/Token.cpp.o.requires:
+CMakeFiles/ycc.dir/src/Lex.cpp.o.requires:
 
-.PHONY : CMakeFiles/ycc.dir/src/Token.cpp.o.requires
+.PHONY : CMakeFiles/ycc.dir/src/Lex.cpp.o.requires
 
-CMakeFiles/ycc.dir/src/Token.cpp.o.provides: CMakeFiles/ycc.dir/src/Token.cpp.o.requires
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/Token.cpp.o.provides.build
-.PHONY : CMakeFiles/ycc.dir/src/Token.cpp.o.provides
+CMakeFiles/ycc.dir/src/Lex.cpp.o.provides: CMakeFiles/ycc.dir/src/Lex.cpp.o.requires
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/Lex.cpp.o.provides.build
+.PHONY : CMakeFiles/ycc.dir/src/Lex.cpp.o.provides
 
-CMakeFiles/ycc.dir/src/Token.cpp.o.provides.build: CMakeFiles/ycc.dir/src/Token.cpp.o
+CMakeFiles/ycc.dir/src/Lex.cpp.o.provides.build: CMakeFiles/ycc.dir/src/Lex.cpp.o
 
 
-CMakeFiles/ycc.dir/src/path.cpp.o: CMakeFiles/ycc.dir/flags.make
-CMakeFiles/ycc.dir/src/path.cpp.o: ../src/path.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/ycc.dir/src/path.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/path.cpp.o -c /home/yk/compiler/ycc/src/path.cpp
+CMakeFiles/ycc.dir/src/macro.cpp.o: CMakeFiles/ycc.dir/flags.make
+CMakeFiles/ycc.dir/src/macro.cpp.o: ../src/macro.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/ycc.dir/src/macro.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/macro.cpp.o -c /home/yk/compiler/ycc/src/macro.cpp
 
-CMakeFiles/ycc.dir/src/path.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/path.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/path.cpp > CMakeFiles/ycc.dir/src/path.cpp.i
+CMakeFiles/ycc.dir/src/macro.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/macro.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/macro.cpp > CMakeFiles/ycc.dir/src/macro.cpp.i
 
-CMakeFiles/ycc.dir/src/path.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/path.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/path.cpp -o CMakeFiles/ycc.dir/src/path.cpp.s
+CMakeFiles/ycc.dir/src/macro.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/macro.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/macro.cpp -o CMakeFiles/ycc.dir/src/macro.cpp.s
 
-CMakeFiles/ycc.dir/src/path.cpp.o.requires:
+CMakeFiles/ycc.dir/src/macro.cpp.o.requires:
 
-.PHONY : CMakeFiles/ycc.dir/src/path.cpp.o.requires
+.PHONY : CMakeFiles/ycc.dir/src/macro.cpp.o.requires
 
-CMakeFiles/ycc.dir/src/path.cpp.o.provides: CMakeFiles/ycc.dir/src/path.cpp.o.requires
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/path.cpp.o.provides.build
-.PHONY : CMakeFiles/ycc.dir/src/path.cpp.o.provides
+CMakeFiles/ycc.dir/src/macro.cpp.o.provides: CMakeFiles/ycc.dir/src/macro.cpp.o.requires
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/macro.cpp.o.provides.build
+.PHONY : CMakeFiles/ycc.dir/src/macro.cpp.o.provides
 
-CMakeFiles/ycc.dir/src/path.cpp.o.provides.build: CMakeFiles/ycc.dir/src/path.cpp.o
+CMakeFiles/ycc.dir/src/macro.cpp.o.provides.build: CMakeFiles/ycc.dir/src/macro.cpp.o
 
 
 CMakeFiles/ycc.dir/src/Memory.cpp.o: CMakeFiles/ycc.dir/flags.make
 CMakeFiles/ycc.dir/src/Memory.cpp.o: ../src/Memory.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/ycc.dir/src/Memory.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/ycc.dir/src/Memory.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/Memory.cpp.o -c /home/yk/compiler/ycc/src/Memory.cpp
 
 CMakeFiles/ycc.dir/src/Memory.cpp.i: cmake_force
@@ -203,7 +179,7 @@ CMakeFiles/ycc.dir/src/Memory.cpp.o.provides.build: CMakeFiles/ycc.dir/src/Memor
 
 CMakeFiles/ycc.dir/src/parser.cpp.o: CMakeFiles/ycc.dir/flags.make
 CMakeFiles/ycc.dir/src/parser.cpp.o: ../src/parser.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/ycc.dir/src/parser.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/ycc.dir/src/parser.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/parser.cpp.o -c /home/yk/compiler/ycc/src/parser.cpp
 
 CMakeFiles/ycc.dir/src/parser.cpp.i: cmake_force
@@ -225,28 +201,52 @@ CMakeFiles/ycc.dir/src/parser.cpp.o.provides: CMakeFiles/ycc.dir/src/parser.cpp.
 CMakeFiles/ycc.dir/src/parser.cpp.o.provides.build: CMakeFiles/ycc.dir/src/parser.cpp.o
 
 
-CMakeFiles/ycc.dir/src/Lex.cpp.o: CMakeFiles/ycc.dir/flags.make
-CMakeFiles/ycc.dir/src/Lex.cpp.o: ../src/Lex.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/ycc.dir/src/Lex.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/Lex.cpp.o -c /home/yk/compiler/ycc/src/Lex.cpp
+CMakeFiles/ycc.dir/src/path.cpp.o: CMakeFiles/ycc.dir/flags.make
+CMakeFiles/ycc.dir/src/path.cpp.o: ../src/path.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/ycc.dir/src/path.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/path.cpp.o -c /home/yk/compiler/ycc/src/path.cpp
 
-CMakeFiles/ycc.dir/src/Lex.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/Lex.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/Lex.cpp > CMakeFiles/ycc.dir/src/Lex.cpp.i
+CMakeFiles/ycc.dir/src/path.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/path.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/path.cpp > CMakeFiles/ycc.dir/src/path.cpp.i
 
-CMakeFiles/ycc.dir/src/Lex.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/Lex.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/Lex.cpp -o CMakeFiles/ycc.dir/src/Lex.cpp.s
+CMakeFiles/ycc.dir/src/path.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/path.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/path.cpp -o CMakeFiles/ycc.dir/src/path.cpp.s
 
-CMakeFiles/ycc.dir/src/Lex.cpp.o.requires:
+CMakeFiles/ycc.dir/src/path.cpp.o.requires:
 
-.PHONY : CMakeFiles/ycc.dir/src/Lex.cpp.o.requires
+.PHONY : CMakeFiles/ycc.dir/src/path.cpp.o.requires
 
-CMakeFiles/ycc.dir/src/Lex.cpp.o.provides: CMakeFiles/ycc.dir/src/Lex.cpp.o.requires
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/Lex.cpp.o.provides.build
-.PHONY : CMakeFiles/ycc.dir/src/Lex.cpp.o.provides
+CMakeFiles/ycc.dir/src/path.cpp.o.provides: CMakeFiles/ycc.dir/src/path.cpp.o.requires
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/path.cpp.o.provides.build
+.PHONY : CMakeFiles/ycc.dir/src/path.cpp.o.provides
 
-CMakeFiles/ycc.dir/src/Lex.cpp.o.provides.build: CMakeFiles/ycc.dir/src/Lex.cpp.o
+CMakeFiles/ycc.dir/src/path.cpp.o.provides.build: CMakeFiles/ycc.dir/src/path.cpp.o
+
+
+CMakeFiles/ycc.dir/src/Token.cpp.o: CMakeFiles/ycc.dir/flags.make
+CMakeFiles/ycc.dir/src/Token.cpp.o: ../src/Token.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/ycc.dir/src/Token.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/Token.cpp.o -c /home/yk/compiler/ycc/src/Token.cpp
+
+CMakeFiles/ycc.dir/src/Token.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/Token.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/Token.cpp > CMakeFiles/ycc.dir/src/Token.cpp.i
+
+CMakeFiles/ycc.dir/src/Token.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/Token.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/Token.cpp -o CMakeFiles/ycc.dir/src/Token.cpp.s
+
+CMakeFiles/ycc.dir/src/Token.cpp.o.requires:
+
+.PHONY : CMakeFiles/ycc.dir/src/Token.cpp.o.requires
+
+CMakeFiles/ycc.dir/src/Token.cpp.o.provides: CMakeFiles/ycc.dir/src/Token.cpp.o.requires
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/Token.cpp.o.provides.build
+.PHONY : CMakeFiles/ycc.dir/src/Token.cpp.o.provides
+
+CMakeFiles/ycc.dir/src/Token.cpp.o.provides.build: CMakeFiles/ycc.dir/src/Token.cpp.o
 
 
 CMakeFiles/ycc.dir/src/utils.cpp.o: CMakeFiles/ycc.dir/flags.make
@@ -273,85 +273,59 @@ CMakeFiles/ycc.dir/src/utils.cpp.o.provides: CMakeFiles/ycc.dir/src/utils.cpp.o.
 CMakeFiles/ycc.dir/src/utils.cpp.o.provides.build: CMakeFiles/ycc.dir/src/utils.cpp.o
 
 
-CMakeFiles/ycc.dir/test/funcTest.cpp.o: CMakeFiles/ycc.dir/flags.make
-CMakeFiles/ycc.dir/test/funcTest.cpp.o: ../test/funcTest.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/ycc.dir/test/funcTest.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/test/funcTest.cpp.o -c /home/yk/compiler/ycc/test/funcTest.cpp
+CMakeFiles/ycc.dir/main.cpp.o: CMakeFiles/ycc.dir/flags.make
+CMakeFiles/ycc.dir/main.cpp.o: ../main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/ycc.dir/main.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/main.cpp.o -c /home/yk/compiler/ycc/main.cpp
 
-CMakeFiles/ycc.dir/test/funcTest.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/test/funcTest.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/test/funcTest.cpp > CMakeFiles/ycc.dir/test/funcTest.cpp.i
+CMakeFiles/ycc.dir/main.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/main.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/main.cpp > CMakeFiles/ycc.dir/main.cpp.i
 
-CMakeFiles/ycc.dir/test/funcTest.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/test/funcTest.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/test/funcTest.cpp -o CMakeFiles/ycc.dir/test/funcTest.cpp.s
+CMakeFiles/ycc.dir/main.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/main.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/main.cpp -o CMakeFiles/ycc.dir/main.cpp.s
 
-CMakeFiles/ycc.dir/test/funcTest.cpp.o.requires:
+CMakeFiles/ycc.dir/main.cpp.o.requires:
 
-.PHONY : CMakeFiles/ycc.dir/test/funcTest.cpp.o.requires
+.PHONY : CMakeFiles/ycc.dir/main.cpp.o.requires
 
-CMakeFiles/ycc.dir/test/funcTest.cpp.o.provides: CMakeFiles/ycc.dir/test/funcTest.cpp.o.requires
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/test/funcTest.cpp.o.provides.build
-.PHONY : CMakeFiles/ycc.dir/test/funcTest.cpp.o.provides
+CMakeFiles/ycc.dir/main.cpp.o.provides: CMakeFiles/ycc.dir/main.cpp.o.requires
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/main.cpp.o.provides.build
+.PHONY : CMakeFiles/ycc.dir/main.cpp.o.provides
 
-CMakeFiles/ycc.dir/test/funcTest.cpp.o.provides.build: CMakeFiles/ycc.dir/test/funcTest.cpp.o
-
-
-CMakeFiles/ycc.dir/src/macro.cpp.o: CMakeFiles/ycc.dir/flags.make
-CMakeFiles/ycc.dir/src/macro.cpp.o: ../src/macro.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/ycc.dir/src/macro.cpp.o"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/macro.cpp.o -c /home/yk/compiler/ycc/src/macro.cpp
-
-CMakeFiles/ycc.dir/src/macro.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/macro.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/macro.cpp > CMakeFiles/ycc.dir/src/macro.cpp.i
-
-CMakeFiles/ycc.dir/src/macro.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/macro.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/macro.cpp -o CMakeFiles/ycc.dir/src/macro.cpp.s
-
-CMakeFiles/ycc.dir/src/macro.cpp.o.requires:
-
-.PHONY : CMakeFiles/ycc.dir/src/macro.cpp.o.requires
-
-CMakeFiles/ycc.dir/src/macro.cpp.o.provides: CMakeFiles/ycc.dir/src/macro.cpp.o.requires
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/macro.cpp.o.provides.build
-.PHONY : CMakeFiles/ycc.dir/src/macro.cpp.o.provides
-
-CMakeFiles/ycc.dir/src/macro.cpp.o.provides.build: CMakeFiles/ycc.dir/src/macro.cpp.o
+CMakeFiles/ycc.dir/main.cpp.o.provides.build: CMakeFiles/ycc.dir/main.cpp.o
 
 
 # Object files for target ycc
 ycc_OBJECTS = \
-"CMakeFiles/ycc.dir/main.cpp.o" \
 "CMakeFiles/ycc.dir/src/buffer.cpp.o" \
 "CMakeFiles/ycc.dir/src/error.cpp.o" \
-"CMakeFiles/ycc.dir/src/Token.cpp.o" \
-"CMakeFiles/ycc.dir/src/path.cpp.o" \
+"CMakeFiles/ycc.dir/src/Lex.cpp.o" \
+"CMakeFiles/ycc.dir/src/macro.cpp.o" \
 "CMakeFiles/ycc.dir/src/Memory.cpp.o" \
 "CMakeFiles/ycc.dir/src/parser.cpp.o" \
-"CMakeFiles/ycc.dir/src/Lex.cpp.o" \
+"CMakeFiles/ycc.dir/src/path.cpp.o" \
+"CMakeFiles/ycc.dir/src/Token.cpp.o" \
 "CMakeFiles/ycc.dir/src/utils.cpp.o" \
-"CMakeFiles/ycc.dir/test/funcTest.cpp.o" \
-"CMakeFiles/ycc.dir/src/macro.cpp.o"
+"CMakeFiles/ycc.dir/main.cpp.o"
 
 # External object files for target ycc
 ycc_EXTERNAL_OBJECTS =
 
-ycc: CMakeFiles/ycc.dir/main.cpp.o
 ycc: CMakeFiles/ycc.dir/src/buffer.cpp.o
 ycc: CMakeFiles/ycc.dir/src/error.cpp.o
-ycc: CMakeFiles/ycc.dir/src/Token.cpp.o
-ycc: CMakeFiles/ycc.dir/src/path.cpp.o
+ycc: CMakeFiles/ycc.dir/src/Lex.cpp.o
+ycc: CMakeFiles/ycc.dir/src/macro.cpp.o
 ycc: CMakeFiles/ycc.dir/src/Memory.cpp.o
 ycc: CMakeFiles/ycc.dir/src/parser.cpp.o
-ycc: CMakeFiles/ycc.dir/src/Lex.cpp.o
+ycc: CMakeFiles/ycc.dir/src/path.cpp.o
+ycc: CMakeFiles/ycc.dir/src/Token.cpp.o
 ycc: CMakeFiles/ycc.dir/src/utils.cpp.o
-ycc: CMakeFiles/ycc.dir/test/funcTest.cpp.o
-ycc: CMakeFiles/ycc.dir/src/macro.cpp.o
+ycc: CMakeFiles/ycc.dir/main.cpp.o
 ycc: CMakeFiles/ycc.dir/build.make
 ycc: CMakeFiles/ycc.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Linking CXX executable ycc"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX executable ycc"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/ycc.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -359,17 +333,16 @@ CMakeFiles/ycc.dir/build: ycc
 
 .PHONY : CMakeFiles/ycc.dir/build
 
-CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/main.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/buffer.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/error.cpp.o.requires
-CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/Token.cpp.o.requires
-CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/path.cpp.o.requires
+CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/Lex.cpp.o.requires
+CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/macro.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/Memory.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/parser.cpp.o.requires
-CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/Lex.cpp.o.requires
+CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/path.cpp.o.requires
+CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/Token.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/utils.cpp.o.requires
-CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/test/funcTest.cpp.o.requires
-CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/macro.cpp.o.requires
+CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/main.cpp.o.requires
 
 .PHONY : CMakeFiles/ycc.dir/requires
 

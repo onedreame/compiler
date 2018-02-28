@@ -8,11 +8,11 @@
 #include <unordered_map>
 #include <list>
 #include <algorithm>
-#include "Token.h"
 #include "Lex.h"
-typedef void (*SpecialMacroHandler)(MacroPreprocessor* ,const DataStruct::Token&);
+//using SpecialMacroHandler=void(*)(MacroPreprocessor* ,const DataStruct::Token&);
 class MacroPreprocessor{
 public:
+    typedef void (*SpecialMacroHandler)(MacroPreprocessor* ,const DataStruct::Token&);
     MacroPreprocessor&operator=( const MacroPreprocessor&)= delete;
     MacroPreprocessor(const MacroPreprocessor&)= delete;
     MacroPreprocessor&operator=(MacroPreprocessor&&)= delete;
@@ -61,7 +61,7 @@ public:
     std::string read_cpp_header_name(const DataStruct::Token &, bool &);
     bool guarded(std::string &);
     bool try_include(std::string , const std::string& , bool );
-    DataStruct::Token may_convert_keyword(const DataStruct::token&);
+    DataStruct::Token may_convert_keyword(const DataStruct::Token&);
 
     void read_define();
     void read_linemarker(const DataStruct::Token &);

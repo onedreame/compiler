@@ -205,7 +205,7 @@ namespace Utils{
             case DataStruct::TOKEN_TYPE::TCHAR:
                 return Utils::format("%s'%s'",
                               encoding_prefix(tok.enc),
-                              quote_char(tok.c));
+                              Utils::quote_char(tok.c));
             case DataStruct::TOKEN_TYPE::TNUMBER:
                 return *(tok.sval);
             case DataStruct::TOKEN_TYPE::TSTRING:

@@ -53,8 +53,6 @@ memory
 -
 enumerate.h
 /home/yk/compiler/ycc/include/enumerate.h
-macro.h
-/home/yk/compiler/ycc/include/macro.h
 
 /home/yk/compiler/ycc/include/buffer.h
 zconf.h
@@ -91,8 +89,6 @@ list
 -
 algorithm
 -
-Token.h
-/home/yk/compiler/ycc/include/Token.h
 Lex.h
 /home/yk/compiler/ycc/include/Lex.h
 
@@ -157,6 +153,10 @@ memory
 -
 ../include/error.h
 /home/yk/compiler/ycc/include/error.h
+../include/utils.h
+/home/yk/compiler/ycc/include/utils.h
+../include/buffer.h
+/home/yk/compiler/ycc/include/buffer.h
 
 /home/yk/compiler/ycc/src/macro.cpp
 libgen.h
@@ -205,24 +205,4 @@ vector
 /home/yk/compiler/ycc/include/Lex.h
 ../include/keyword.inc
 /home/yk/compiler/ycc/include/keyword.inc
-
-/home/yk/compiler/ycc/test/funcTest.cpp
-funcTest.h
-/home/yk/compiler/ycc/test/funcTest.h
-../include/Lex.h
-/home/yk/compiler/ycc/include/Lex.h
-string
--
-unistd.h
--
-dirent.h
--
-cstring
--
-fstream
--
-
-/home/yk/compiler/ycc/test/funcTest.h
-string
--
 

@@ -5,6 +5,8 @@
 #include <iostream>
 #include <memory>
 #include "../include/error.h"
+#include "../include/utils.h"
+#include "../include/buffer.h"
 
 namespace Error{
     void Print_error(const char *s)

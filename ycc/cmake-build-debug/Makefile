@@ -393,33 +393,6 @@ src/utils.cpp.s:
 	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/utils.cpp.s
 .PHONY : src/utils.cpp.s
 
-test/funcTest.o: test/funcTest.cpp.o
-
-.PHONY : test/funcTest.o
-
-# target to build an object file
-test/funcTest.cpp.o:
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/test/funcTest.cpp.o
-.PHONY : test/funcTest.cpp.o
-
-test/funcTest.i: test/funcTest.cpp.i
-
-.PHONY : test/funcTest.i
-
-# target to preprocess a source file
-test/funcTest.cpp.i:
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/test/funcTest.cpp.i
-.PHONY : test/funcTest.cpp.i
-
-test/funcTest.s: test/funcTest.cpp.s
-
-.PHONY : test/funcTest.s
-
-# target to generate assembly for a file
-test/funcTest.cpp.s:
-	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/test/funcTest.cpp.s
-.PHONY : test/funcTest.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -459,9 +432,6 @@ help:
 	@echo "... src/utils.o"
 	@echo "... src/utils.i"
 	@echo "... src/utils.s"
-	@echo "... test/funcTest.o"
-	@echo "... test/funcTest.i"
-	@echo "... test/funcTest.s"
 .PHONY : help
 
 

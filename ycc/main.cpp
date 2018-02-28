@@ -15,6 +15,7 @@
 
 int main() {
     DataStruct::File fi;
+    DataStruct::Token t;
 //    std::cout << "Hello, World!" << std::endl;
 //    Print_error("hello,%d,%f,%s\n",1,2.3,"yes");
 //    std::string s1="3行";

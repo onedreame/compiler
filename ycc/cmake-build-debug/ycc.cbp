@@ -153,12 +153,6 @@
 		<Unit filename="/home/yk/compiler/ycc/src/utils.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/test/funcTest.cpp">
-			<Option target="ycc"/>
-		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/test/funcTest.h">
-			<Option target="ycc"/>
-		</Unit>
 		<Unit filename="/home/yk/compiler/ycc/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
