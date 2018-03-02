@@ -17,45 +17,46 @@
 class MacroPreprocessor;
 namespace DataStruct {
     struct File{
-        std::shared_ptr<std::ifstream> file;  // stream backed by FILE *
-        std::string p;     // stream backed by string
+        std::shared_ptr<std::ifstream> file;  // 文件流
+        std::string p;     // 字符串流
         std::string name;  //文件名
         int cur;
         int line;
         int column;
-        int ntok;     // token counter
-        int last;     // the last character read from file
-        time_t mtime; // last modified time. 0 if string-backed file
+        int ntok;     // 该流中有多少个token
+        int last;     // 从流中读取的最后一个字符
+        time_t mtime; // 最后修改时间
     } ;
 
-    typedef struct {
+    struct SourceLoc{
         char *file;
         int line;
-    } SourceLoc;
+    } ;
 
-    typedef struct Type {
-        int kind;
+    struct Type {
+        Type(DataStruct::TYPE_KIND k,int s=0,int a=0,bool ui=false):kind(k),size(s),align(a),usig(ui){}
+        Type()= default;
+        DataStruct::TYPE_KIND kind;
         int size;
         int align;
-        bool usig; // true if unsigned
+        bool usig; // 是否是unsigned
         bool isstatic;
         // pointer or array
-        struct Type *ptr;
+        Type *ptr;
         // array length
         int len;
         // struct
         std::map<std::map<const char *, void *>, std::vector<void *>> *fields;
         int offset;
-        bool is_struct; // true if struct, false if union
+        bool is_struct; // true：struct, false： union
         // bitfield
         int bitoff;
         int bitsize;
-        // function
-        struct Type *rettype;
+        Type *rettype;   //函数返回类型
         std::vector<void *> *params;
         bool hasva;
         bool oldstyle;
-    } Type;
+    };
 
     struct Token{
         TOKEN_TYPE kind;
@@ -170,5 +171,186 @@ namespace DataStruct {
         bool is_varg= false;
         std::function<void (MacroPreprocessor* ,const DataStruct::Token&)> fn= nullptr;
     };
+
+    class Node{
+    public:
+
+
+    private:
+        enum {CIL,   //char int or long
+              FD,    //float or double
+              STR,   //string
+              LGV,   //local/global 变量
+              BIOP,  //binary op
+              UNOP,  //unary op
+              FCFD,  //函数调用或声明
+              DEC,   //声明
+              INIT,  //初始化
+              IFTOP, //if语句或ternary op
+              GOLA,  //goto label
+              RET,   //return 语句
+              COMPO, //compound 语句
+              STRREF,//struct引用
+        } tok;
+        union {
+            // char int or long
+            long ival;
+            // float or double
+            struct {
+                double fval;
+                char *flabel;
+            };
+            // string
+            struct {
+                char *sval;
+                char *slabel;
+            };
+            // local/global 变量
+            struct {
+                char *varname;
+                // local
+                int loff;
+                std::vector<DataStruct::Token> lvarinit;
+                // global
+                char *glabel;
+            };
+            // binary op
+            struct {
+                Node *left;
+                Node *right;
+            };
+            // unary op
+            struct {
+                Node *operand;
+            };
+            // 函数调用或声明
+            struct {
+                char *fname;
+                // Function call
+                std::vector<DataStruct::Token> args;
+                struct Type *ftype;
+                // Function pointer or function designator
+                struct Node *fptr;
+                // Function declaration
+                std::vector<DataStruct::Token> params;
+                std::vector<DataStruct::Token> localvars;
+                struct Node *body;
+            };
+            // 声明
+            struct {
+                struct Node *declvar;
+                std::vector<DataStruct::Token> declinit;
+            };
+            // 初始化
+            struct {
+                Node *initval;
+                int initoff;
+                Type *totype;
+            };
+            // if语句或ternary op
+            struct {
+                Node *cond;
+                Node *then;
+                Node *els;
+            };
+            // goto label
+            struct {
+                char *label;
+                char *newlabel;
+            };
+            // return 语句
+            Node *retval;
+            // compound 语句
+            std::vector<DataStruct::Token> stmts;
+            // struct引用
+            struct {
+                Node *struc;
+                std::string field;
+                Type *fieldtype;
+            };
+        };
+    };
+    typedef struct Node {
+        int kind;
+        Type *ty;
+        SourceLoc *sourceLoc;
+        union {
+            // Char, int, or long
+            long ival;
+            // Float or double
+            struct {
+                double fval;
+                char *flabel;
+            };
+            // String
+            struct {
+                char *sval;
+                char *slabel;
+            };
+            // Local/global variable
+            struct {
+                char *varname;
+                // local
+                int loff;
+                Vector *lvarinit;
+                // global
+                char *glabel;
+            };
+            // Binary operator
+            struct {
+                struct Node *left;
+                struct Node *right;
+            };
+            // Unary operator
+            struct {
+                struct Node *operand;
+            };
+            // Function call or function declaration
+            struct {
+                char *fname;
+                // Function call
+                Vector *args;
+                struct Type *ftype;
+                // Function pointer or function designator
+                struct Node *fptr;
+                // Function declaration
+                Vector *params;
+                Vector *localvars;
+                struct Node *body;
+            };
+            // Declaration
+            struct {
+                struct Node *declvar;
+                Vector *declinit;
+            };
+            // Initializer
+            struct {
+                struct Node *initval;
+                int initoff;
+                Type *totype;
+            };
+            // If statement or ternary operator
+            struct {
+                struct Node *cond;
+                struct Node *then;
+                struct Node *els;
+            };
+            // Goto and label
+            struct {
+                char *label;
+                char *newlabel;
+            };
+            // Return statement
+            struct Node *retval;
+            // Compound statement
+            Vector *stmts;
+            // Struct reference
+            struct {
+                struct Node *struc;
+                char *field;
+                Type *fieldtype;
+            };
+        };
+    } Node;
 }
 #endif //YCC_TOKEN_H

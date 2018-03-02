@@ -10,6 +10,6 @@
 namespace Test{
     void lexTokenTest(std::string);
     void newLineTest();
-    void macroExpandTest();
+    void macroExpandTest(const std::string&,int);
 }
 #endif //YCC_FUNCTEST_H

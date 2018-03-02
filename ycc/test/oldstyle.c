@@ -2,7 +2,7 @@
 
 #include "test.h"
 
-#ifdef __8cc__
+#ifndef __8cc__
 #pragma disable_warning
 #endif
 

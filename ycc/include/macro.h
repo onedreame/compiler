@@ -9,6 +9,8 @@
 #include <list>
 #include <algorithm>
 #include "Lex.h"
+#include "utils.h"
+
 //using SpecialMacroHandler=void(*)(MacroPreprocessor* ,const DataStruct::Token&);
 class MacroPreprocessor{
 public:
@@ -17,7 +19,10 @@ public:
     MacroPreprocessor(const MacroPreprocessor&)= delete;
     MacroPreprocessor&operator=(MacroPreprocessor&&)= delete;
     MacroPreprocessor(MacroPreprocessor&&)= delete;
-    MacroPreprocessor(std::shared_ptr<Lex> lex):lex(lex){}
+    MacroPreprocessor(Lex* lex):lex(lex){}
+    MacroPreprocessor(const std::string&infile):lex(new Lex(infile)){}
+    MacroPreprocessor(){if (Utils::infile.empty()) Error::error("未指定输入文件");lex=new Lex(Utils::infile);}
+    ~MacroPreprocessor(){if(lex!= nullptr) delete lex;}
     DataStruct::Token read_expand_newline();
     DataStruct::Token read_expand();
     DataStruct::Token peek_token();
@@ -105,7 +110,7 @@ public:
     void read_from_string(const std::string&);
 private:
 
-    std::shared_ptr<Lex> lex;
+    Lex* lex= nullptr;
     std::unordered_map<std::string,DataStruct::Macro> macros;
     std::list<DataStruct::Token > tokens;
     std::unordered_map<std::string,DataStruct::AST_TYPE > keywords;

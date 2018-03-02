@@ -22,7 +22,7 @@ namespace Utils{
         return src;
     }
 
-    std::string quoto_char(char c)
+    std::string quote_char(char c)
     {
         if(c=='\\') return std::string("\\\\");
         if (c=='\'') return std::string("\\\'");

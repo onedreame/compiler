@@ -99,7 +99,7 @@ namespace DataStruct
         LEFT='%',
     };
 
-    enum {
+    enum class TYPE_KIND{
         KIND_VOID,
         KIND_BOOL,
         KIND_CHAR,
@@ -117,6 +117,21 @@ namespace DataStruct
         KIND_FUNC,
         // used only in parser
                 KIND_STUB,
+        KIND_PLACEHOLDER,
+    };
+    enum class QUALITIFIER{
+        S_TYPEDEF = 1,
+        S_EXTERN,
+        S_STATIC,
+        S_AUTO,
+        S_REGISTER,
+    };
+
+    enum class DECL{
+        DECL_BODY = 1,
+        DECL_PARAM,
+        DECL_PARAM_TYPEONLY,
+        DECL_CAST,
     };
 }
 #endif //YCC_ENUMERATE_H

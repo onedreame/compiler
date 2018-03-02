@@ -233,7 +233,7 @@ std::vector<DataStruct::Token > MacroPreprocessor::subst(const DataStruct::Macro
 }
 //置于后备buffers中，以便解析展开后的token
 void MacroPreprocessor::unget_all(std::vector<DataStruct::Token >&tokens) {
-    for (auto i = tokens.size() - 1; i >= 0; --i)
+    for (int i = tokens.size() - 1; i >= 0; --i)
         lex->retreat_token(tokens[i]);
 }
 
@@ -244,6 +244,7 @@ DataStruct::Token MacroPreprocessor::peek_token() {
 }
 
 //读取一个token，必要的时候进行宏展开，
+//c11标准5.1.1.2中是说：Adjacent string literal tokens are concatenated.这里需要特殊处理一下。
 DataStruct::Token MacroPreprocessor::read_token() {
     DataStruct::Token tok;
     while (true)
@@ -253,6 +254,25 @@ DataStruct::Token MacroPreprocessor::read_token() {
         {
             read_directive(tok);
             continue;
+        }
+        if (tok.kind==DataStruct::TOKEN_TYPE::TINVALID)
+            Error::errort(tok,"stray character in program.%c", static_cast<char>(tok.c));
+        if (tok.kind==DataStruct::TOKEN_TYPE::TSTRING)
+        {
+            std::string b;
+            DataStruct::ENCODE enc=tok.enc;
+            while(tok.kind==DataStruct::TOKEN_TYPE::TSTRING)
+            {
+                DataStruct::ENCODE enc2=tok.enc;
+                if (enc!=DataStruct::ENCODE::ENC_NONE&&enc2!=DataStruct::ENCODE::ENC_NONE&&enc!=enc2)
+                    Error:: errort(tok, "unsupported non-standard concatenation of string literals: %s", Utils::tok2s(tok));
+                b+=*(tok.sval);
+                if (enc==DataStruct::ENCODE::ENC_NONE)
+                    enc=enc2;
+                tok=read_expand();
+            }
+            lex->retreat_token(tok);
+            return lex->make_strtok(b,enc);
         }
         return may_convert_keyword(tok);
     }
@@ -613,7 +633,7 @@ std::string MacroPreprocessor::join_paths(std::vector<DataStruct::Token >& args)
 std::string MacroPreprocessor::read_cpp_header_name(const DataStruct::Token &hash, bool &std) {
 
     std::string path = lex->read_header_file_name(std);
-    if (path.empty())
+    if (!path.empty())
         return path;
 
     //8cc中写，如果不是采用<>或“”包含的，那么宏展开也可能是合法的文件路径
@@ -679,7 +699,14 @@ void MacroPreprocessor::read_include(const DataStruct::Token &hash, std::shared_
         goto err;
     }
     if (!std) {
-        std::string dir = !file->name.empty() ? dirname(const_cast<char*>(file->name.c_str())) : ".";
+        std::string dir=".";
+        char tpath[256];
+        if (!file->name.empty()){
+            auto len=file->name.copy(tpath,file->name.size(),0);
+            tpath[len]='\0';
+            dir=dirname(tpath);
+        }
+
         if (try_include(dir, filename, isimport))
             return;
     }
@@ -838,7 +865,7 @@ void MacroPreprocessor::add_include_path(const std::string &path) {
 }
 void MacroPreprocessor::init_path_and_macros() {
 //    vec_push(std_include_path, BUILD_DIR "/include");
-    std_include_path.emplace_back("/usr/local/lib/8cc/include");
+    std_include_path.emplace_back("/usr/local/lib/ycc/include");
     std_include_path.emplace_back("/usr/local/include");
     std_include_path.emplace_back("/usr/include");
     std_include_path.emplace_back("/usr/include/linux");
