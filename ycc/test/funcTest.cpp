@@ -6,6 +6,7 @@
 #include "../include/Lex.h"
 #include "../include/macro.h"
 #include "../include/path.h"
+#include "../include/Token.h"
 #include <string>
 #include <unistd.h>
 #include <dirent.h>
@@ -146,5 +147,17 @@ namespace Test{
                 tok=cpp.read_token();
             }
         }
+    }
+    void NodeTest()
+    {
+        DataStruct::Node node;
+        std::cout<<node.ival<<std::endl;
+        node=DataStruct::Node::make_FD_node(1.2,"hello");
+        std::cout<<node.fd->fval<<std::endl;
+        std::cout<<node.fd->flabel<<std::endl;
+        node=DataStruct::Node::make_GOLA_node("yes","no");
+        std::cout<<node.gola->label<<std::endl;
+        std::cout<<node.gola->newlabel<<std::endl;
+        node=DataStruct::Node::make_UNOP_node(std::make_shared<DataStruct::Node>());
     }
 }

@@ -242,6 +242,9 @@ DataStruct::Token MacroPreprocessor::peek_token() {
     lex->retreat_token(r);
     return r;
 }
+DataStruct::Token MacroPreprocessor::next(DataStruct::AST_TYPE) {
+
+}
 
 //读取一个token，必要的时候进行宏展开，
 //c11标准5.1.1.2中是说：Adjacent string literal tokens are concatenated.这里需要特殊处理一下。
@@ -965,3 +968,4 @@ void handle_counter_macro(MacroPreprocessor* thi,const DataStruct::Token &tmpl) 
 void handle_include_level_macro(MacroPreprocessor* thi,const DataStruct::Token &tmpl) {
     thi->make_token_pushback(tmpl, DataStruct::TOKEN_TYPE::TNUMBER, std::to_string(thi->lex->steam_depth()-1));
 }
+

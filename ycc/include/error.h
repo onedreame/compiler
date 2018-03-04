@@ -6,6 +6,7 @@
 #define YCC_ERROR_H
 
 #include <string>
+#include <iostream>
 #include "Token.h"
 #include "colors.h"
 #define STR2(X) #X

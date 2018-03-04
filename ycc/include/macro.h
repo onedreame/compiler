@@ -25,6 +25,7 @@ public:
     ~MacroPreprocessor(){if(lex!= nullptr) delete lex;}
     DataStruct::Token read_expand_newline();
     DataStruct::Token read_expand();
+    bool next(DataStruct::AST_TYPE );
     DataStruct::Token peek_token();
     DataStruct::Token read_token();
     struct tm getNow(){ return now;}
@@ -45,8 +46,8 @@ public:
     }
     void propagate_space(std::vector<DataStruct::Token >&, const DataStruct::Token &);
     std::vector<DataStruct::Token > read_one_arg(const DataStruct::Token &ident, bool &end, bool readall);
-    std::vector<DataStruct::Token > subst(const DataStruct::Macro &, std::vector<std::vector<DataStruct::Token >>&, std::set<std::string> &);
 
+    std::vector<DataStruct::Token > subst(const DataStruct::Macro &, std::vector<std::vector<DataStruct::Token >>&, std::set<std::string> &);
     std::vector<DataStruct::Token > expand_all(std::vector<DataStruct::Token >&, const DataStruct::Token &);
     std::vector<DataStruct::Token > add_hide_set(std::vector<DataStruct::Token >&,std::set<std::string >&);
     DataStruct::Token stringize(const DataStruct::Token &, std::vector<DataStruct::Token >&);
@@ -66,8 +67,8 @@ public:
     std::string read_cpp_header_name(const DataStruct::Token &, bool &);
     bool guarded(std::string &);
     bool try_include(std::string , const std::string& , bool );
-    DataStruct::Token may_convert_keyword(const DataStruct::Token&);
 
+    DataStruct::Token may_convert_keyword(const DataStruct::Token&);
     void read_define();
     void read_linemarker(const DataStruct::Token &);
     void read_elif(const DataStruct::Token &);
@@ -82,8 +83,8 @@ public:
     void read_line();
     void read_pragma();
     void read_undef();
-    void read_warning(const DataStruct::Token&);
 
+    void read_warning(const DataStruct::Token&);
     void make_token_pushback(const DataStruct::Token &, DataStruct::TOKEN_TYPE , const std::string &);
     friend void handle_date_macro(MacroPreprocessor*,const DataStruct::Token &);
     friend void handle_time_macro(MacroPreprocessor*,const DataStruct::Token &);
@@ -93,6 +94,7 @@ public:
     friend void handle_pragma_macro(MacroPreprocessor*,const DataStruct::Token &);
     friend void handle_base_file_macro(MacroPreprocessor*,const DataStruct::Token &);
     friend void handle_counter_macro(MacroPreprocessor*,const DataStruct::Token &);
+
     friend void handle_include_level_macro(MacroPreprocessor*,const DataStruct::Token &);
 
 //    void handle_date_macro(MacroPreprocessor*const,const DataStruct::Token &);
@@ -105,11 +107,10 @@ public:
 //    void handle_counter_macro(const DataStruct::Token &);
 //    void handle_include_level_macro(const DataStruct::Token &);
     void add_include_path(const std::string &);
-
     void cpp_init();
     void read_from_string(const std::string&);
-private:
 
+private:
     Lex* lex= nullptr;
     std::unordered_map<std::string,DataStruct::Macro> macros;
     std::list<DataStruct::Token > tokens;
@@ -121,17 +122,16 @@ private:
     const DataStruct::Token CPP_TOKEN_ONE=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,"1");
     const DataStruct::Token CPP_TOKEN_ZERO=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,"0");
     std::vector<std::string> std_include_path;
+
     struct tm now;
 
     DataStruct::Macro make_macro(const DataStruct::Macro& tmpl) {
         return DataStruct::Macro(tmpl);
     }
-
     DataStruct::Token make_macro_token(int , bool);
     DataStruct::Token copy_token(const DataStruct::Token&) const ;
     void expect(DataStruct::AST_TYPE);
     DataStruct::Token skip_newlines();
-    bool next(DataStruct::AST_TYPE );
     template <class T>
     std::set<T> set_intersection(const std::set<T>&s1,const std::set<T>& s2) const
     {

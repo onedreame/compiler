@@ -97,6 +97,7 @@ namespace DataStruct
         LOW='<',
         HIG='>',
         LEFT='%',
+        AST_PLACEHOLDER,
     };
 
     enum class TYPE_KIND{
@@ -125,6 +126,7 @@ namespace DataStruct
         S_STATIC,
         S_AUTO,
         S_REGISTER,
+        S_PLACEHOLDER,
     };
 
     enum class DECL{
@@ -132,6 +134,23 @@ namespace DataStruct
         DECL_PARAM,
         DECL_PARAM_TYPEONLY,
         DECL_CAST,
+    };
+
+    enum class NODETYPE{
+        CIL,   //char int or long
+        FD,    //float or double
+        STR,   //string
+        LGV,   //local/global 变量
+        BIOP,  //binary op
+        UNOP,  //unary op
+        FCFD,  //函数调用或声明
+        DEC,   //声明
+        INIT,  //初始化
+        IFTOP, //if语句或ternary op
+        GOLA,  //goto label
+        RET,   //return 语句
+        COMPO, //compound 语句
+        STRREF,//struct引用
     };
 }
 #endif //YCC_ENUMERATE_H
