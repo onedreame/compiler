@@ -7,6 +7,7 @@
 #include <iostream>
 #include <libgen.h>
 #include <vector>
+#include <algorithm>
 #include "../include/buffer.h"
 #include "../include/error.h"
 #include "../include/Lex.h"
@@ -224,5 +225,69 @@ namespace Utils{
                 return "(macro-param)";
         }
         Error::error("internal error: unknown token kind: %d", static_cast<int>(tok.kind));
+    }
+    std::string decorate_int(const std::string& name, const std::shared_ptr<DataStruct::Type> &ty) {
+        auto u = (ty->usig) ? "u" : "";
+        if (ty->bitsize > 0)
+            return format("%s%s:%d:%d", u, name, ty->bitoff, ty->bitoff + ty->bitsize);
+        return u+name;
+    }
+    std::string do_ty2s(std::unordered_map<std::shared_ptr<DataStruct::Type>,bool>&& dict,const std::shared_ptr<DataStruct::Type>& ty){
+        if (!ty)
+            return "(nil)";
+        switch (ty->kind) {
+            case DataStruct::TYPE_KIND::KIND_VOID: return "void";
+            case DataStruct::TYPE_KIND::KIND_BOOL: return "_Bool";
+            case DataStruct::TYPE_KIND::KIND_CHAR: return decorate_int("char", ty);
+            case DataStruct::TYPE_KIND::KIND_SHORT: return decorate_int("short", ty);
+            case DataStruct::TYPE_KIND::KIND_INT:  return decorate_int("int", ty);
+            case DataStruct::TYPE_KIND::KIND_LONG: return decorate_int("long", ty);
+            case DataStruct::TYPE_KIND::KIND_LLONG: return decorate_int("llong", ty);
+            case DataStruct::TYPE_KIND::KIND_FLOAT: return "float";
+            case DataStruct::TYPE_KIND::KIND_DOUBLE: return "double";
+            case DataStruct::TYPE_KIND::KIND_LDOUBLE: return "long double";
+            case DataStruct::TYPE_KIND::KIND_PTR:
+                return format("*%s", do_ty2s(std::move(dict), ty->ptr));
+            case DataStruct::TYPE_KIND::KIND_ARRAY:
+                return format("[%d]%s", ty->len, do_ty2s(std::move(dict), ty->ptr));
+            case DataStruct::TYPE_KIND::KIND_STRUCT: {
+                auto kind = ty->is_struct ? "struct" : "union";
+                if (dict.find(ty)!=dict.end())
+                    return format("(%s)", kind);
+                dict[ty]= true ;
+                if (!ty->fields.empty()) {
+                    std::string b;
+                    b+="(";b+=kind;
+                    auto key_selector=[](std::pair<std::string, std::shared_ptr<DataStruct::Type>>& pair){ return pair.first;};
+                    std::vector<std::string> keys(dict.size());
+                    std::transform(dict.cbegin(),dict.cend(),keys.begin(),key_selector);
+                    for (auto&key:keys) {
+                        Type *fieldtype = dict_get(ty->fields, key);
+                        buf_printf(b, " (%s)", do_ty2s(std::move(dict), fieldtype));
+                    }
+                    buf_printf(b, ")");
+                    return b;
+                }
+            }
+            case DataStruct::TYPE_KIND::KIND_FUNC: {
+                std::string b;
+                b+="(";
+                if (!(ty->params.empty())) {
+                    for (int i = 0; i < ty->params.size(); i++) {
+                        if (i > 0)
+                            b+=",";
+                        const DataStruct::Type &t = ty->params[i];
+                        b+=do_ty2s(std::move(dict), std::make_shared<DataStruct::Type>(t));
+                    }
+                }
+                buf_printf(b, ")=>%s", do_ty2s(std::move(dict), ty->rettype));
+                return b;
+            }
+            default:
+                return format("(Unknown ty: %d)", static_cast<int >(ty->kind));
+        }
+    }
+    std::string ty2s(const std::shared_ptr<DataStruct::Type>&ty){
+        return do_ty2s(std::unordered_map<std::shared_ptr<DataStruct::Type>,bool>(),ty);
     }
 }

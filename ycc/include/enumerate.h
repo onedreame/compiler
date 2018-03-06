@@ -131,10 +131,10 @@ namespace DataStruct
 
     enum class DECL_TYPE{
         DECL_PLACEHOLDER=0,
-        DECL_BODY = 1,
-        DECL_PARAM,
-        DECL_PARAM_TYPEONLY,
-        DECL_CAST,
+        DECL_BODY = 1,     //函数体
+        DECL_PARAM,        //参数
+        DECL_PARAM_TYPEONLY,    //参数
+        DECL_CAST,     //typeof
     };
 
     enum class NODETYPE{

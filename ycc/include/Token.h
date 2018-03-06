@@ -12,6 +12,7 @@
 #include <vector>
 #include <fstream>
 #include <memory>
+#include <bits/unordered_map.h>
 #include "enumerate.h"
 class MacroPreprocessor;
 namespace DataStruct {
@@ -39,8 +40,9 @@ namespace DataStruct {
         Type(DataStruct::Type k,const std::shared_ptr<DataStruct::Type>&ret,const std::vector<DataStruct::Type>& params,bool hasva,
              bool oldstype):kind(k),rettype(ret),params(params),hasva(hasva),oldstyle(oldstype){}
         Type()= default;
+        Type(const Type&)= default;
         DataStruct::TYPE_KIND kind;
-        int size;
+        int size;       //该type所占字节数
         int align;
         bool usig; // 是否是unsigned
         bool isstatic;
@@ -49,14 +51,14 @@ namespace DataStruct {
         // array length
         int len;
         // struct
-        std::map<std::map<const char *, void *>, std::vector<void *>> *fields;
+        std::vector<std::pair<std::string, std::shared_ptr<Type>>> fields;
         int offset;
         bool is_struct; // true：struct, false： union
         // bitfield
         int bitoff;
         int bitsize;
         std::shared_ptr<Type> rettype;   //函数返回类型
-        std::vector<Type> params;
+        std::vector<Type> params;        //函数参数
         bool hasva;
         //http://en.cppreference.com/w/c/language/function_declaration
         bool oldstyle;

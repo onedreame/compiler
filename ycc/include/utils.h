@@ -40,6 +40,7 @@ namespace Utils
     extern bool dumpstack;
     extern bool dump;
     extern std::string BUILD_DIR;
+    std::string ty2s(const std::shared_ptr<DataStruct::Type>&);
     std::string tok2s(const DataStruct::Token& tok);
     std::string encoding_prefix(DataStruct::ENCODE enc);
 }

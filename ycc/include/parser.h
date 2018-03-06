@@ -20,7 +20,7 @@ public:
     std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>> env(){
         return localenv?localenv:globalenv;
     };
-    std::vector<DataStruct::Token>& read_toplevels();
+    std::shared_ptr<std::vector<DataStruct::Node>>& read_toplevels();
     DataStruct::Token read_funcdef();
 private:
     MacroPreprocessor* macro= nullptr;
@@ -29,6 +29,8 @@ private:
     DataStruct::SourceLoc sl;   //错误位置
     std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>> globalenv=std::make_shared<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>();    //全局变量
     std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>> localenv= nullptr;     //局部变量
+    std::unordered_map<std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>,
+            std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>> level;
     std::unordered_map<std::string,std::shared_ptr<DataStruct::Type>> tags;         //struct/union/enum
     std::unordered_map<std::string,DataStruct::Token> labels;       //goto label
 
@@ -85,8 +87,18 @@ private:
     std::shared_ptr<DataStruct::Type> make_ptr_type(const std::shared_ptr<DataStruct::Type> &);
     std::shared_ptr<DataStruct::Type> make_array_type(std::shared_ptr<DataStruct::Type>&, int );
 
+    bool is_inttype(const std::shared_ptr<DataStruct::Type>&);
+    bool is_flotype(const std::shared_ptr<DataStruct::Type>&);
+    bool is_arithtype(const std::shared_ptr<DataStruct::Type>&);
+    bool is_string(const std::shared_ptr<DataStruct::Type>&);
+
+    int read_intexpr();
+    int eval_intexpr(const std::shared_ptr<DataStruct::Node> &, const std::shared_ptr<DataStruct::Node> *);
+    int eval_struct_ref(const std::shared_ptr<DataStruct::Node> &, int);
+
     DataStruct::SourceLoc& mark_location();
     std::shared_ptr<DataStruct::Node> ast_lvar(const std::shared_ptr<DataStruct::Type> &, const std::string &);
+    std::shared_ptr<DataStruct::Node> ast_inttype(const std::shared_ptr<DataStruct::Type> &, long ) ;
 
     bool is_type(const DataStruct::Token&);
     std::shared_ptr<DataStruct::Type> get_typedef(const std::string&);
@@ -100,9 +112,18 @@ private:
     std::shared_ptr<DataStruct::Type> read_enum_def();
     std::shared_ptr<DataStruct::Type> read_rectype_def(bool);
     std::string read_rectype_tag();
-    std::unordered_map<std::string,std::shared_ptr<DataStruct::Type>>  read_rectype_fields_sub();
+    std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>>  read_rectype_fields_sub();
+    void fix_rectype_flexible_member(std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>> &);
+    std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>> update_struct_offset(int&,int&,std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>>&);
+    std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>> update_union_offset(int&,int&,std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>>&);
+    void finish_bitfield(int&,int &);
+    int compute_padding(int , int );
+    void squash_unnamed_struct(std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>>&, std::shared_ptr<DataStruct::Type> &, int ) ;
+
+
+    int read_bitsize(std::string&,const std::shared_ptr<DataStruct::Type>&);
     std::shared_ptr<DataStruct::Type> read_declarator(std::string*,const std::shared_ptr<DataStruct::Type>&,std::vector<DataStruct::Node>*,DataStruct::DECL_TYPE);
-    std::unordered_map<std::string,std::shared_ptr<DataStruct::Type>>  read_rectype_fields(int &,int &,bool);
+    std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>> read_rectype_fields(int &,int &,bool);
 
     void read_static_assert();
     void ensure_not_void(std::shared_ptr<DataStruct::Type>&);
