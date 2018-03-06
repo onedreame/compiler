@@ -242,9 +242,6 @@ DataStruct::Token MacroPreprocessor::peek_token() {
     lex->retreat_token(r);
     return r;
 }
-DataStruct::Token MacroPreprocessor::next(DataStruct::AST_TYPE) {
-
-}
 
 //读取一个token，必要的时候进行宏展开，
 //c11标准5.1.1.2中是说：Adjacent string literal tokens are concatenated.这里需要特殊处理一下。

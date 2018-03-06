@@ -121,15 +121,16 @@ namespace DataStruct
         KIND_PLACEHOLDER,
     };
     enum class QUALITIFIER{
+        S_PLACEHOLDER=0,
         S_TYPEDEF = 1,
         S_EXTERN,
         S_STATIC,
         S_AUTO,
         S_REGISTER,
-        S_PLACEHOLDER,
     };
 
-    enum class DECL{
+    enum class DECL_TYPE{
+        DECL_PLACEHOLDER=0,
         DECL_BODY = 1,
         DECL_PARAM,
         DECL_PARAM_TYPEONLY,

@@ -26,6 +26,7 @@ public:
     DataStruct::Token read_expand_newline();
     DataStruct::Token read_expand();
     bool next(DataStruct::AST_TYPE );
+    void expect(DataStruct::AST_TYPE);
     DataStruct::Token peek_token();
     DataStruct::Token read_token();
     struct tm getNow(){ return now;}
@@ -130,7 +131,6 @@ private:
     }
     DataStruct::Token make_macro_token(int , bool);
     DataStruct::Token copy_token(const DataStruct::Token&) const ;
-    void expect(DataStruct::AST_TYPE);
     DataStruct::Token skip_newlines();
     template <class T>
     std::set<T> set_intersection(const std::set<T>&s1,const std::set<T>& s2) const

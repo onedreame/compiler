@@ -80,16 +80,36 @@ private:
     void CHECK_CPP();
     void CHECK_LEX();
     std::shared_ptr<DataStruct::Type> make_rectype(bool);
+    std::shared_ptr<DataStruct::Type> make_numtype(DataStruct::TYPE_KIND, bool);
+    std::shared_ptr<DataStruct::Type> make_func_type(const std::shared_ptr<DataStruct::Type> &, const std::vector<DataStruct::Type> &, bool, bool) ;
+    std::shared_ptr<DataStruct::Type> make_ptr_type(const std::shared_ptr<DataStruct::Type> &);
 
     bool is_type(const DataStruct::Token&);
     std::shared_ptr<DataStruct::Type> get_typedef(const std::string&);
     void skip_parentheses(std::vector<DataStruct::Token>&);
-    std::shared_ptr<DataStruct::Type> read_decl_spec_opt(DataStruct::QUALITIFIER &);
-    std::shared_ptr<DataStruct::Type> read_decl_spec(DataStruct::QUALITIFIER &);
+    std::shared_ptr<DataStruct::Type> read_decl_spec_opt(DataStruct::QUALITIFIER *);
+    std::shared_ptr<DataStruct::Type> read_decl_spec(DataStruct::QUALITIFIER *);
+    std::shared_ptr<DataStruct::Type> read_typeof();
+    std::shared_ptr<DataStruct::Type> read_comma_expr();
     std::shared_ptr<DataStruct::Type> read_struct_def();
     std::shared_ptr<DataStruct::Type> read_union_def();
     std::shared_ptr<DataStruct::Type> read_enum_def();
     std::shared_ptr<DataStruct::Type> read_rectype_def(bool);
     std::string read_rectype_tag();
+    std::unordered_map<std::string,std::shared_ptr<DataStruct::Type>>  read_rectype_fields_sub();
+    std::shared_ptr<DataStruct::Type> read_declarator(std::string*,const std::shared_ptr<DataStruct::Type>&,std::vector<DataStruct::Type>*,DataStruct::DECL_TYPE);
+    std::unordered_map<std::string,std::shared_ptr<DataStruct::Type>>  read_rectype_fields(int &,int &,bool);
+
+    void read_static_assert();
+    void ensure_not_void(std::shared_ptr<DataStruct::Type>&);
+    int read_alignas();
+    bool is_poweroftwo(int);
+    std::shared_ptr<DataStruct::Type> read_cast_type();
+    std::shared_ptr<DataStruct::Type> read_abstract_declarator(const std::shared_ptr<DataStruct::Type>&);
+    std::shared_ptr<DataStruct::Type> read_declarator_func(const std::shared_ptr<DataStruct::Type>&, std::vector<DataStruct::Type>*);
+    std::shared_ptr<DataStruct::Type> read_func_param_list(std::vector<DataStruct::Type>*, const std::shared_ptr<DataStruct::Type>&);
+    std::shared_ptr<DataStruct::Type> read_declarator_tail(const std::shared_ptr<DataStruct::Type>&, std::vector<DataStruct::Type>*);
+    void read_declarator_params(std::vector<DataStruct::Type>&, std::vector<DataStruct::Type>*, bool &);
+    std::shared_ptr<DataStruct::Type> read_func_param(std::string& ,bool);
 };
 #endif //YCC_PARSER_H

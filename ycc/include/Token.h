@@ -35,7 +35,9 @@ namespace DataStruct {
     struct Type {
         Type(DataStruct::TYPE_KIND k,int s=0,int a=0,bool ui=false):kind(k),size(s),align(a),usig(ui){}
         Type(DataStruct::TYPE_KIND k,bool is_struct=false):kind(k),is_struct(is_struct){}
-        Type(DataStruct::TYPE_KIND k,int s,int a,Type* ptr,int len=0):kind(k),size(s),align(a),ptr(ptr),len(len){}
+        Type(DataStruct::TYPE_KIND k,int s,int a,std::shared_ptr<Type>& ptr,int len=0):kind(k),size(s),align(a),ptr(ptr),len(len){}
+        Type(DataStruct::Type k,const std::shared_ptr<DataStruct::Type>&ret,const std::vector<DataStruct::Token>& params,bool hasva,
+             bool oldstype):kind(k),rettype(ret),params(params),hasva(hasva),oldstyle(oldstype){}
         Type()= default;
         DataStruct::TYPE_KIND kind;
         int size;
@@ -43,7 +45,7 @@ namespace DataStruct {
         bool usig; // 是否是unsigned
         bool isstatic;
         // pointer or array
-        Type *ptr= nullptr;
+        std::shared_ptr<Type> ptr= nullptr;
         // array length
         int len;
         // struct
@@ -53,9 +55,10 @@ namespace DataStruct {
         // bitfield
         int bitoff;
         int bitsize;
-        Type *rettype;   //函数返回类型
+        std::shared_ptr<Type> rettype;   //函数返回类型
         std::vector<Token> params;
         bool hasva;
+        //http://en.cppreference.com/w/c/language/function_declaration
         bool oldstyle;
     };
 
