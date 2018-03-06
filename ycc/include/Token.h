@@ -28,7 +28,7 @@ namespace DataStruct {
     } ;
 
     struct SourceLoc{
-        char *file;
+        std::string file;
         int line;
     } ;
 
@@ -36,7 +36,7 @@ namespace DataStruct {
         Type(DataStruct::TYPE_KIND k,int s=0,int a=0,bool ui=false):kind(k),size(s),align(a),usig(ui){}
         Type(DataStruct::TYPE_KIND k,bool is_struct=false):kind(k),is_struct(is_struct){}
         Type(DataStruct::TYPE_KIND k,int s,int a,std::shared_ptr<Type>& ptr,int len=0):kind(k),size(s),align(a),ptr(ptr),len(len){}
-        Type(DataStruct::Type k,const std::shared_ptr<DataStruct::Type>&ret,const std::vector<DataStruct::Token>& params,bool hasva,
+        Type(DataStruct::Type k,const std::shared_ptr<DataStruct::Type>&ret,const std::vector<DataStruct::Type>& params,bool hasva,
              bool oldstype):kind(k),rettype(ret),params(params),hasva(hasva),oldstyle(oldstype){}
         Type()= default;
         DataStruct::TYPE_KIND kind;
@@ -56,7 +56,7 @@ namespace DataStruct {
         int bitoff;
         int bitsize;
         std::shared_ptr<Type> rettype;   //函数返回类型
-        std::vector<Token> params;
+        std::vector<Type> params;
         bool hasva;
         //http://en.cppreference.com/w/c/language/function_declaration
         bool oldstyle;
@@ -80,6 +80,7 @@ namespace DataStruct {
         // TMACRO_PARAM
         bool is_vararg= false;   //是否是可变参数宏
         int position=-1;        //对于函数宏，代表该token是第几个参数
+
         Token()= default;
 
         Token(DataStruct::TOKEN_TYPE id,std::string str="",int c='\0',DataStruct::ENCODE enc=DataStruct::ENCODE::ENC_NONE):kind(id),sval(std::make_shared<std::string>(str)),c(c),enc(enc){}
@@ -176,29 +177,23 @@ namespace DataStruct {
         std::function<void (MacroPreprocessor* ,const DataStruct::Token&)> fn= nullptr;
     };
     class Node;
-    struct BASE_Node{
-//        NODETYPE kind;
-//        BASE_Node(NODETYPE tok):kind(tok){}
-        std::shared_ptr<Type> ty;
-        std::shared_ptr<SourceLoc> sourceloc;
-        virtual ~BASE_Node()=0;
-    };
 
-    struct CTL_Node: public BASE_Node{
+    struct CTL_Node{
 //        CTL_Node():BASE_Node(NODETYPE::CIL){}
         long ival;
+
     };
-    struct FD_Node:public BASE_Node{
+    struct FD_Node{
 //        FD_Node():BASE_Node(NODETYPE::FD){}
         double fval;
         std::string flabel;
     };
-    struct STR_Node:public BASE_Node{
+    struct STR_Node{
 //        STR_Node():BASE_Node(NODETYPE::STR){}
         std::string sval;
         std::string slabel;
     };
-    struct LGV_Node:public BASE_Node{
+    struct LGV_Node{
 //        LGV_Node():BASE_Node(NODETYPE::LGV){}
         std::string varname;
         // local
@@ -207,16 +202,16 @@ namespace DataStruct {
         // global
         std::string glabel;
     };
-    struct BIOP_Node:public BASE_Node{
+    struct BIOP_Node{
 //        BIOP_Node():BASE_Node(NODETYPE::BIOP){}
         std::shared_ptr<Node> left;
         std::shared_ptr<Node> right;
     };
-    struct RET_Node:public BASE_Node{
+    struct RET_Node{
 //        RET_Node():BASE_Node(NODETYPE::RET){}
         std::shared_ptr<Node> retval;
     };
-    struct FCFD_Node:public BASE_Node{
+    struct FCFD_Node{
 //        FCFD_Node():BASE_Node(NODETYPE::FCFD){}
         std::string fname;
         // Function call
@@ -229,39 +224,39 @@ namespace DataStruct {
         std::vector<Token> localvars;
         std::shared_ptr<Node> body;
     };
-    struct DEC_Node:public BASE_Node{
+    struct DEC_Node{
 //        DEC_Node():BASE_Node(NODETYPE::DEC){}
         std::shared_ptr<Node> declvar;
         std::vector<Token> declinit;
     };
-    struct INIT_Node:public BASE_Node{
+    struct INIT_Node{
 //        INIT_Node():BASE_Node(NODETYPE::INIT){}
         std::shared_ptr<Node> initval;
         int initoff;
         std::shared_ptr<Type> totype;
     };
-    struct IFTOP_Node:public BASE_Node{
+    struct IFTOP_Node{
 //        IFTOP_Node():BASE_Node(NODETYPE::IFTOP){}
         std::shared_ptr<Node> cond;
         std::shared_ptr<Node> then;
         std::shared_ptr<Node> els;
     };
-    struct STRREF_Node:public BASE_Node{
+    struct STRREF_Node{
 //        STRREF_Node():BASE_Node(NODETYPE::STRREF){}
         std::shared_ptr<Node> struc;
         std::string field;
         std::shared_ptr<Type> fieldtype;
     };
-    struct COMPO_Node:public BASE_Node{
+    struct COMPO_Node{
 //        COMPO_Node():BASE_Node(NODETYPE::COMPO){}
         std::vector<DataStruct::Token> stmts;
     };
-    struct GOLA_Node:public BASE_Node{
+    struct GOLA_Node{
 //        GOLA_Node():BASE_Node(NODETYPE::GOLA){}
         std::string label;
         std::string newlabel;
     };
-    struct UNOP_Node:public BASE_Node{
+    struct UNOP_Node{
 //        UNOP_Node():BASE_Node(NODETYPE::UNOP){}
         std::shared_ptr<Node> unop;
     };
@@ -325,7 +320,8 @@ namespace DataStruct {
 //            std::shared_ptr<Type> fieldtype;
 //        };// struct引用
         Node():tok(NODETYPE::CIL),ival(0){}
-        Node(const Node&r):tok(r.tok){copyUnion(r);}
+        Node(const Node&r):kind(r.getKind()),ty(r.getTy()),sourceloc(r.getSourceloc()){copyUnion(r);}
+        Node(AST_TYPE k,const std::shared_ptr<Type>&ty, const SourceLoc& sor):kind(k),ty(ty),sourceloc(sor){}
         ~Node(){clear();}
         Node&operator=(const Node& t);
         static Node make_CIL_node(long);
@@ -357,9 +353,9 @@ namespace DataStruct {
 
         void setTy(const std::shared_ptr<Type> &ty);
 
-        const std::shared_ptr<SourceLoc> &getSourceloc() const;
+        const SourceLoc &getSourceloc() const;
 
-        void setSourceloc(const std::shared_ptr<SourceLoc> &sourceloc);
+        void setSourceloc(const SourceLoc &sourceloc);
 
 
 //        union {
@@ -396,7 +392,7 @@ namespace DataStruct {
     private:
         AST_TYPE kind;
         std::shared_ptr<Type> ty;
-        std::shared_ptr<SourceLoc> sourceloc;
+        SourceLoc sourceloc;
         NODETYPE tok;
         Node& copyUnion(const Node& r);
         void clear();

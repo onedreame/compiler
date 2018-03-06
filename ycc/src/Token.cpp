@@ -119,6 +119,9 @@ void DataStruct::Node::clear() {
 }
 
 DataStruct::Node& DataStruct::Node::operator=(const DataStruct::Node& t){
+    kind=t.getKind();
+    ty=t.getTy();
+    sourceloc=t.getSourceloc();
     return copyUnion(t);
 }
 
@@ -146,11 +149,11 @@ void DataStruct::Node::setTy(const std::shared_ptr<DataStruct::Type> &ty) {
     Node::ty = ty;
 }
 
-const std::shared_ptr<DataStruct::SourceLoc> &DataStruct::Node::getSourceloc() const {
+const DataStruct::SourceLoc &DataStruct::Node::getSourceloc() const {
     return sourceloc;
 }
 
-void DataStruct::Node::setSourceloc(const std::shared_ptr<DataStruct::SourceLoc> &sourceloc) {
+void DataStruct::Node::setSourceloc(const DataStruct::SourceLoc &sourceloc) {
     Node::sourceloc = sourceloc;
 }
 

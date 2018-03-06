@@ -52,6 +52,55 @@ std::shared_ptr<DataStruct::Type> Parser::make_func_type(const std::shared_ptr<D
 std::shared_ptr<DataStruct::Type> Parser::make_ptr_type(const std::shared_ptr<DataStruct::Type> &ty) {
     return std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_PTR,8,8,ty);
 }
+std::shared_ptr<DataStruct::Type> Parser::make_array_type(std::shared_ptr<DataStruct::Type>&type, int len){
+    int size;
+    if (len < 0)
+        size = -1;
+    else
+        size = type->size * len;
+    return std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_ARRAY,size,type->align,type,len);
+}
+//标记出错文件名和行号
+DataStruct::SourceLoc& Parser::mark_location() {
+    CHECK_CPP();
+    DataStruct::Token tok = macro->peek_token();
+    sl={tok.file->name,tok.line};
+    return sl;
+}
+
+char *make_tempname() {
+    static int c = 0;
+    return format(".T%d", c++);
+}
+
+char *make_label() {
+    static int c = 0;
+    return format(".L%d", c++);
+}
+
+static char *make_static_label(char *name) {
+    static int c = 0;
+    return format(".S%d.%s", c++, name);
+}
+
+static Case *make_case(int beg, int end, char *label) {
+    Case *r = malloc(sizeof(Case));
+    r->beg = beg;
+    r->end = end;
+    r->label = label;
+    return r;
+}
+
+std::shared_ptr<DataStruct::Node> Parser::ast_lvar(const std::shared_ptr<DataStruct::Type> &ty, const std::string &name) {
+    std::shared_ptr<DataStruct::Node> r=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_LVAR,ty,mark_location());
+    r->lgv=std::make_shared<DataStruct::LGV_Node>();
+    r->lgv->varname=name;
+    if (localenv)
+        localenv->operator[](name)= r;
+    if (localvars)
+        localvars->push_back(*r);
+    return r;
+}
 //c中的类型，可以是关键字，auto，const，char等，或者采用typedef自定义的类型
 bool Parser::is_type(const DataStruct::Token&tok){
     if (tok.kind == DataStruct::TOKEN_TYPE::TIDENT)
@@ -71,8 +120,8 @@ bool Parser::is_type(const DataStruct::Token&tok){
 //name是否是typedef定义的类型，是则返回定义的类型，否则返回nullptr
 std::shared_ptr<DataStruct::Type> Parser::get_typedef(const std::string&name){
     std::shared_ptr<DataStruct::Node> node=nullptr;
-    if (env().find(name)!=env().end())
-        node=env().at(name);
+    if (env()->find(name)!=env()->end())
+        node=env()->at(name);
     return (node && node->getKind() == DataStruct::AST_TYPE ::AST_TYPEDEF) ? node->getTy() : nullptr;
 }
 //是否是函数定义，C中的函数定义可以包括函数定义和函数声明
@@ -430,30 +479,26 @@ void Parser::read_static_assert(){
 }
 // C11 6.7.6: Declarators
 std::shared_ptr<DataStruct::Type> Parser::read_declarator(std::string *name,const std::shared_ptr<DataStruct::Type>&basetype,
-                                                  std::vector<DataStruct::Type>*params,DataStruct::DECL_TYPE type){
+                                                  std::vector<DataStruct::Node>*params,DataStruct::DECL_TYPE type){
     CHECK_CPP();
     CHECK_LEX();
+    //C11 6.7.6.1.3 Function declarators
     if (macro->next(lex->get_keywords("("))) {
-        // '(' is either beginning of grouping parentheses or of a function parameter list.
-        // If the next token is a type name, a parameter list must follow.
         if (is_type(macro->peek_token()))
-            return read_declarator_func(basetype, params);
-        // If not, it's grouping. In that case we have to read from outside.
-        // For example, consider int (*)(), which is "pointer to function returning int".
-        // We have only read "int" so far. We don't want to pass "int" to
-        // a recursive call, or otherwise we would get "pointer to int".
-        // Here, we pass a dummy object to get "pointer to <something>" first,
-        // continue reading to get "function returning int", and then combine them.
+            return read_declarator_func(basetype, params);   //int (int...)
+        //int (*)(int...)
         std::shared_ptr<DataStruct::Type> stub = std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_PLACEHOLDER,0);
-        std::shared_ptr<DataStruct::Type> t = read_declarator(name, stub, params, type);
-        macro->expect(lex->get_keywords("("));
+        std::shared_ptr<DataStruct::Type> t = read_declarator(name, stub, params, type);  //过滤掉第一个括号内的内容并提取出函数指针
+        macro->expect(lex->get_keywords(")"));
         stub = read_declarator_tail(basetype, params);
         return t;
     }
+    //C11 6.7.6.1 Pointer Declarators
     if (macro->next(lex->get_keywords("*"))) {
         skip_type_qualifiers();
-        return read_declarator(name, make_ptr_type(basetype), params, type);
+        return read_declarator(name, make_ptr_type(basetype), params, type);  //递归构造多重指针
     }
+    //C11 6.7.6.2 Array Declarators
     DataStruct::Token tok = macro->read_token();
     if (tok.kind == DataStruct::TOKEN_TYPE ::TIDENT) {
         if (type == DataStruct::DECL_TYPE::DECL_CAST)
@@ -466,7 +511,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_declarator(std::string *name,cons
     lex->retreat_token(tok);
     return read_declarator_tail(basetype, params);
 }
-std::shared_ptr<DataStruct::Type> Parser::read_declarator_tail(const std::shared_ptr<DataStruct::Type>&basetype, std::vector<DataStruct::Type>*params){
+std::shared_ptr<DataStruct::Type> Parser::read_declarator_tail(const std::shared_ptr<DataStruct::Type>&basetype, std::vector<DataStruct::Node>*params){
     CHECK_LEX();
     CHECK_CPP();
     if (macro->next(lex->get_keywords("[")))
@@ -475,25 +520,39 @@ std::shared_ptr<DataStruct::Type> Parser::read_declarator_tail(const std::shared
         return read_declarator_func(basetype, params);
     return basetype;
 }
-std::shared_ptr<DataStruct::Type> Parser::read_declarator_func(const std::shared_ptr<DataStruct::Type>&basetype, std::vector<DataStruct::Type>*params){
-    if (basetype->kind == DataStruct::TYPE_KIND::KIND_FUNC)
+//int a[][3]
+std::shared_ptr<DataStruct::Type> Parser::read_declarator_array(const std::shared_ptr<DataStruct::Type> &basetype){
+    CHECK_LEX();
+    CHECK_CPP();
+    int len;
+    if (macro->next(lex->get_keywords("]"))) {
+        len = -1;
+    } else {
+        len = read_intexpr();
+        macro->expect(lex->get_keywords("]"));
+    }
+    const DataStruct::Token &tok = macro->peek_token();
+    std::shared_ptr<DataStruct::Type> t = read_declarator_tail(basetype, nullptr);
+    if (t->kind == DataStruct::TYPE_KIND::KIND_FUNC)
+        Error::errort(tok, "array of functions");
+    return make_array_type(t, len);
+}
+std::shared_ptr<DataStruct::Type> Parser::read_declarator_func(const std::shared_ptr<DataStruct::Type>&returntype, std::vector<DataStruct::Node>*params){
+    if (returntype->kind == DataStruct::TYPE_KIND::KIND_FUNC)
         Error::error("function returning a function");
-    if (basetype->kind == DataStruct::TYPE_KIND::KIND_ARRAY)
+    if (returntype->kind == DataStruct::TYPE_KIND::KIND_ARRAY)
         Error::error("function returning an array");
-    return read_func_param_list(params, basetype);
+    return read_func_param_list(params, returntype);
 }
 //C11 6.7.6.3
-std::shared_ptr<DataStruct::Type> Parser::read_func_param_list(std::vector<DataStruct::Type>*param, const std::shared_ptr<DataStruct::Type>&rettype){
+std::shared_ptr<DataStruct::Type> Parser::read_func_param_list(std::vector<DataStruct::Node>*param, const std::shared_ptr<DataStruct::Type>&rettype){
     CHECK_CPP();
     CHECK_LEX();
     DataStruct::Token tok = macro->read_token();
     if (lex->is_keyword(tok, lex->get_keywords("void")) && macro->next(lex->get_keywords(")")))
         return make_func_type(rettype, std::vector<DataStruct::Type>(), false, false);
 
-    // C11 6.7.6.3p14: K&R-style un-prototyped declaration or
-    // function definition having no parameters.
-    // We return a type representing K&R-style declaration here.
-    // If this is actually part of a declartion, the type will be fixed later.
+    // C11 6.7.6.3 p14
     //K&R style函数声明是上古版本的用法了，所以实不实现都无所谓，不过为了更好的兼容旧代码，实现了还是有一定用处的，
     //最起码，可以学到更多的知识。。。
     if (lex->is_keyword(tok, lex->get_keywords(")")))
@@ -512,12 +571,14 @@ std::shared_ptr<DataStruct::Type> Parser::read_func_param_list(std::vector<DataS
     if (!param)
         Error::errort(tok, "invalid function definition");
     read_declarator_params_oldstyle(param);
-    std::vector<std::shared_ptr<DataStruct::Type>> paramtypes ;
+    std::vector<DataStruct::Type> paramtypes ;
     for (auto &e:*param)
-        paramtypes.push_back(TYPE_INT);
+        paramtypes.emplace_back(*TYPE_INT);
     return make_func_type(rettype, paramtypes, false, true);
 }
-void Parser::read_declarator_params(std::vector<DataStruct::Type>&paramtypes, std::vector<DataStruct::Type>*paramvars, bool &ellipsis){
+//paramtypes: 参数类型
+//paramvars: 命名参数
+void Parser::read_declarator_params(std::vector<DataStruct::Type>&paramtypes, std::vector<DataStruct::Node>*paramvars, bool &ellipsis){
     CHECK_LEX();
     CHECK_CPP();
     bool typeonly = paramvars== nullptr;
@@ -534,9 +595,9 @@ void Parser::read_declarator_params(std::vector<DataStruct::Type>&paramtypes, st
         std::string name;
         std::shared_ptr<DataStruct::Type> ty = read_func_param(name, typeonly);
         ensure_not_void(ty);
-        paramtypes.push_back(ty);
+        paramtypes.push_back(*ty);
         if (!typeonly)
-            vec_push(vars, ast_lvar(ty, name));
+            paramvars->emplace_back( *(ast_lvar(ty, name)));
         tok = macro->read_token();
         if (lex->is_keyword(tok, lex->get_keywords(")")))
             return;
@@ -555,20 +616,38 @@ std::shared_ptr<DataStruct::Type> Parser::read_func_param(std::string& name,bool
         Error::errort(macro->peek_token(), "type expected, but got %s", Utils::tok2s(macro->peek_token()));
     }
     std::shared_ptr<DataStruct::Type> ty = read_declarator(&name, basety, nullptr, typeonly ? DataStruct::DECL_TYPE::DECL_PARAM_TYPEONLY : DataStruct::DECL_TYPE::DECL_PARAM);
-    // C11 6.7.6.3p7: Array of T is adjusted to pointer to T
-    // in a function parameter list.
+    // C11 6.7.6.3 p7
     if (ty->kind == DataStruct::TYPE_KIND::KIND_ARRAY)
         return make_ptr_type(ty->ptr);
-    // C11 6.7.6.3p8: Function is adjusted to pointer to function
-    // in a function parameter list.
+    // C11 6.7.6.3 p8
     if (ty->kind == DataStruct::TYPE_KIND::KIND_FUNC)
         return make_ptr_type(ty);
     return ty;
+}
+void Parser::read_declarator_params_oldstyle(std::vector<DataStruct::Node>*vars){
+    CHECK_CPP();
+    CHECK_LEX();
+    for (;;) {
+        const DataStruct::Token &tok = macro->read_token();
+        if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
+            Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+        vars->emplace_back(ast_lvar(TYPE_INT, *(tok.sval)));
+        if (macro->next(lex->get_keywords(")")))
+            return;
+        if (!macro->next(lex->get_keywords(",")))
+            Error::errort(tok, "comma expected, but got %s", Utils::tok2s(macro->read_token()));
+    }
 }
 //确保类型不为void
 void Parser::ensure_not_void(std::shared_ptr<DataStruct::Type>&fieldtype){
     if(fieldtype->kind==DataStruct::TYPE_KIND::KIND_VOID)
         Error::error("void is not allowed");
+}
+//跳过const volatile，restrict
+void Parser::skip_type_qualifiers(){
+    CHECK_CPP();
+    CHECK_LEX();
+    while (macro->next(lex->get_keywords("const"))||macro->next(lex->get_keywords("volatile"))||macro->next(lex->get_keywords("restrict")));
 }
 //http://zh.cppreference.com/w/c/language/_Alignas
 int Parser::read_alignas(){
