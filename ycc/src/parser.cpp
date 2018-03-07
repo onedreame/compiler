@@ -246,6 +246,31 @@ std::shared_ptr<DataStruct::Node> Parser::ast_string(DataStruct::ENCODE enc, con
     node->str->sval=body;
     return node;
 }
+std::shared_ptr<DataStruct::Node> Parser::ast_funcdesg(const std::shared_ptr<DataStruct::Type> &ty, const std::string &fname) {
+    auto node=std::make_shared<DataStruct::Node>();
+    node->setSourceloc(sl);
+    node->setKind(DataStruct::AST_TYPE::AST_FUNCDESG);
+    node->setTy(ty);
+    node->fcfd=std::make_shared<DataStruct::FCFD_Node>();
+    node->fcfd->fname=fname;
+    return node;
+}
+std::shared_ptr<DataStruct::Node> Parser::ast_uop(DataStruct::AST_TYPE kind, const std::shared_ptr<DataStruct::Type> &ty, const std::shared_ptr<DataStruct::Node> &operand) {
+    auto node=std::make_shared<DataStruct::Node>();
+    node->setKind(kind);
+    node->setTy(ty);
+    node->setSourceloc(sl);
+    node->unop=operand;
+    return node;
+}
+std::shared_ptr<DataStruct::Node> Parser::ast_conv(const std::shared_ptr<DataStruct::Type> &totype, const std::shared_ptr<DataStruct::Node> &val) {
+    auto node=std::make_shared<DataStruct::Node>();
+    node->setKind(DataStruct::AST_TYPE::AST_CONV);
+    node->setSourceloc(sl);
+    node->setTy(totype);
+    node->unop=val;
+    return node;
+}
 //c中的类型，可以是关键字，auto，const，char等，或者采用typedef自定义的类型
 bool Parser::is_type(const DataStruct::Token&tok){
     if (tok.kind == DataStruct::TOKEN_TYPE::TIDENT)
@@ -1058,8 +1083,145 @@ std::shared_ptr<DataStruct::Type> Parser::read_cast_type() {
 std::shared_ptr<DataStruct::Type> Parser::read_abstract_declarator(const std::shared_ptr<DataStruct::Type>& basety) {
     return read_declarator(nullptr, basety, nullptr, DataStruct::DECL_TYPE::DECL_CAST);
 }
-std::shared_ptr<DataStruct::Node> Parser::read_var_or_func(const std::string &name){
+//6.3.1 下面是类型转换处理，标准中说的很清楚，对照实现就好了
+std::shared_ptr<DataStruct::Node> Parser::conv(const std::shared_ptr<DataStruct::Node> &node) {
+    if (!node)
+        return nullptr;
+    auto ty = node->getTy();
+    switch (ty->kind) {
+        case DataStruct::TYPE_KIND::KIND_ARRAY:
+            // C11 6.3.2.1p3: An array of T is converted to a pointer to T.
+            return ast_uop(DataStruct::AST_TYPE::AST_CONV, make_ptr_type(ty->ptr), node);
+        case DataStruct::TYPE_KIND::KIND_FUNC:
+            // C11 6.3.2.1p4: A function designator is converted to a pointer to the function.
+            return ast_uop(DataStruct::AST_TYPE::AST_ADDR, make_ptr_type(ty), node);
+        case DataStruct::TYPE_KIND::KIND_SHORT: case DataStruct::TYPE_KIND::KIND_CHAR: case DataStruct::TYPE_KIND::KIND_BOOL:
+            // C11 6.3.1.1p2: The integer promotions
+            return ast_conv(TYPE_INT, node);
+        case DataStruct::TYPE_KIND::KIND_INT:
+            if (ty->bitsize > 0)
+                return ast_conv(TYPE_INT, node);
+    }
+    return node;
+}
 
+bool Parser::same_arith_type(const std::shared_ptr<DataStruct::Type> &t, const std::shared_ptr<DataStruct::Type> &u) {
+    return t->kind == u->kind && t->usig == u->usig;
+}
+
+std::shared_ptr<DataStruct::Node> Parser::wrap(const std::shared_ptr<DataStruct::Type> &t, const std::shared_ptr<DataStruct::Node> &node) {
+    if (same_arith_type(t, node->getTy()))
+        return node;
+    return ast_uop(DataStruct::AST_TYPE::AST_CONV, t, node);
+}
+
+// C11 6.3.1.8
+std::shared_ptr<DataStruct::Type> Parser::usual_arith_conv(std::shared_ptr<DataStruct::Type> t, std::shared_ptr<DataStruct::Type> u) {
+    if (!is_arithtype(t))
+        Error::error("%s is not arithtype.",Utils::ty2s(t));
+    if (!is_arithtype(u))
+        Error::error("%s is not arithtype.",Utils::ty2s(u));
+    if (t->kind < u->kind) {
+        auto tmp = t;
+        t = u;
+        u = tmp;
+    }
+    if (is_flotype(t))
+        return t;
+    if (!is_inttype(t)||t->size >= TYPE_INT->size)
+        Error::error("%s is not int type or size less than int",Utils::ty2s(t));
+    if (!is_inttype(u)||u->size >= TYPE_INT->size)
+        Error::error("%s is not int type or size less than int",Utils::ty2s(u));
+    if (t->size > u->size)
+        return t;
+    if (t->size!=u->size)
+        Error::error("%s and %s are not the same size",Utils::ty2s(t),Utils::ty2s(u));
+    if (t->usig == u->usig)
+        return t;
+    decltype(t) r = std::make_shared<DataStruct::Type>(*t);
+    r->usig = true;
+    return r;
+}
+
+bool Parser::valid_pointer_binop(DataStruct::AST_TYPE op) {
+    switch (op) {
+        case DataStruct::AST_TYPE::SUB: case DataStruct::AST_TYPE::LOW: case DataStruct::AST_TYPE::HIG: case DataStruct::AST_TYPE::OP_EQ:
+        case DataStruct::AST_TYPE::OP_NE: case DataStruct::AST_TYPE::OP_GE: case DataStruct::AST_TYPE::OP_LE:
+            return true;
+        default:
+            return false;
+    }
+}
+std::shared_ptr<DataStruct::Node> binop(DataStruct::AST_TYPE op, const std::shared_ptr<DataStruct::Node> &lhs, const std::shared_ptr<DataStruct::Node> &rhs) {
+    if (lhs->ty->kind == KIND_PTR && rhs->ty->kind == KIND_PTR) {
+        if (!valid_pointer_binop(op))
+            Error::error("invalid pointer arith");
+        // C11 6.5.6.9: Pointer subtractions have type ptrdiff_t.
+        if (op == '-')
+            return ast_binop(type_long, op, lhs, rhs);
+        // C11 6.5.8.6, 6.5.9.3: Pointer comparisons have type int.
+        return ast_binop(type_int, op, lhs, rhs);
+    }
+    if (lhs->ty->kind == KIND_PTR)
+        return ast_binop(lhs->ty, op, lhs, rhs);
+    if (rhs->ty->kind == KIND_PTR)
+        return ast_binop(rhs->ty, op, rhs, lhs);
+    assert(is_arithtype(lhs->ty));
+    assert(is_arithtype(rhs->ty));
+    Type *r = usual_arith_conv(lhs->ty, rhs->ty);
+    return ast_binop(r, op, wrap(r, lhs), wrap(r, rhs));
+}
+bool is_same_struct(const std::shared_ptr<DataStruct::Type> &a, const std::shared_ptr<DataStruct::Type> &b) {
+    if (a->kind != b->kind)
+        return false;
+    switch (a->kind) {
+        case DataStruct::TYPE_KIND::KIND_ARRAY:
+            return a->len == b->len &&
+                   is_same_struct(a->ptr, b->ptr);
+        case DataStruct::TYPE_KIND::KIND_PTR:
+            return is_same_struct(a->ptr, b->ptr);
+        case DataStruct::TYPE_KIND::KIND_STRUCT: {
+            if (a->is_struct != b->is_struct)
+                return false;
+            Vector *ka = dict_keys(a->fields);
+            Vector *kb = dict_keys(b->fields);
+            if (a.size() != b.size())
+                return false;
+            for (int i = 0; i < vec_len(ka); i++)
+                if (!is_same_struct(vec_get(ka, i), vec_get(kb, i)))
+                    return false;
+            return true;
+        }
+        default:
+            return true;
+    }
+}
+
+static void ensure_assignable(Type *totype, Type *fromtype) {
+    if ((is_arithtype(totype) || totype->kind == KIND_PTR) &&
+        (is_arithtype(fromtype) || fromtype->kind == KIND_PTR))
+        return;
+    if (is_same_struct(totype, fromtype))
+        return;
+    error("incompatible kind: <%s> <%s>", ty2s(totype), ty2s(fromtype));
+}
+std::shared_ptr<DataStruct::Node> Parser::read_var_or_func(const std::string &name){
+    CHECK_LEX();
+    CHECK_CPP();
+    std::shared_ptr<DataStruct::Node> v= nullptr;
+    if(env()->find(name)!=env()->end())
+        v=env()->at(name);
+    if (!v) {
+        const DataStruct::Token &tok = macro->peek_token();
+        if (!lex->is_keyword(tok, lex->get_keywords("(")))
+            Error::errort(tok, "undefined variable: %s", name);
+        auto ty = make_func_type(TYPE_INT,std::vector<DataStruct::Type> () , true, false);
+        Error::warnt(tok, "assume returning int: %s()", name);
+        return ast_funcdesg(ty, name);
+    }
+    if (v->getTy()->kind == DataStruct::TYPE_KIND::KIND_FUNC)
+        return ast_funcdesg(v->getTy(), name);
+    return v;
 }
 int Parser::get_compound_assign_op(const DataStruct::Token &tok){
 
@@ -1079,6 +1241,12 @@ std::shared_ptr<DataStruct::Type> Parser::char_type(DataStruct::ENCODE enc){
     }
     Error::error("internal error");
 }
+//6.5.1 Primary Expression
+//identifier
+//constant:    6.4.4  Integer Floating Enumeration Charater
+//string-literal
+//( expression )
+//generic-selectionz
 std::shared_ptr<DataStruct::Node> Parser::read_primary_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -1114,10 +1282,47 @@ std::shared_ptr<DataStruct::Node>  Parser::read_subscript_expr(const std::shared
 
 }
 std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr_tail(const std::shared_ptr<DataStruct::Node> &node){
-
+    CHECK_CPP();
+    CHECK_LEX();
+    if (!node) return nullptr;
+    for (;;) {
+        if (macro->next(lex->get_keywords("("))) {
+            const DataStruct::Token &tok = macro->peek_token();
+            node = conv(node);
+            auto t = node->getTy();
+            if (t->kind != DataStruct::TYPE_KIND::KIND_PTR || t->ptr->kind != DataStruct::TYPE_KIND::KIND_FUNC)
+                errort(tok, "function expected, but got %s", node2s(node));
+            node = read_funcall(node);
+            continue;
+        }
+        if (next_token('[')) {
+            node = read_subscript_expr(node);
+            continue;
+        }
+        if (next_token('.')) {
+            node = read_struct_field(node);
+            continue;
+        }
+        if (next_token(OP_ARROW)) {
+            if (node->ty->kind != KIND_PTR)
+                error("pointer type expected, but got %s %s",
+                      ty2s(node->ty), node2s(node));
+            node = ast_uop(AST_DEREF, node->ty->ptr, node);
+            node = read_struct_field(node);
+            continue;
+        }
+        Token *tok = peek();
+        if (next_token(OP_INC) || next_token(OP_DEC)) {
+            ensure_lvalue(node);
+            int op = is_keyword(tok, OP_INC) ? OP_POST_INC : OP_POST_DEC;
+            return ast_uop(op, node->ty, node);
+        }
+        return node;
+    }
 }
 std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr(){
-
+    auto node = read_primary_expr();
+    return read_postfix_expr_tail(node);
 }
 std::shared_ptr<DataStruct::Node> Parser::read_unary_incdec(int op){
 

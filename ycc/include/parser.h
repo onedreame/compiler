@@ -93,6 +93,15 @@ private:
     bool is_arithtype(const std::shared_ptr<DataStruct::Type>&);
     bool is_string(const std::shared_ptr<DataStruct::Type>&);
 
+    std::shared_ptr<DataStruct::Node> conv(const std::shared_ptr<DataStruct::Node> &);
+    bool same_arith_type(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Type> &);
+    std::shared_ptr<DataStruct::Node> wrap(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
+    std::shared_ptr<DataStruct::Type> usual_arith_conv(std::shared_ptr<DataStruct::Type>, std::shared_ptr<DataStruct::Type>);
+    bool valid_pointer_binop(DataStruct::AST_TYPE );
+    Node *binop(int op, Node *lhs, Node *rhs);
+    bool is_same_struct(Type *a, Type *b);
+    void ensure_assignable(Type *totype, Type *fromtype);
+
     std::shared_ptr<DataStruct::Type> read_int_suffix(const std::string &);
     std::shared_ptr<DataStruct::Node> read_int(const DataStruct::Token &);
     std::shared_ptr<DataStruct::Node> read_float(const DataStruct::Token &);
@@ -107,6 +116,9 @@ private:
     std::shared_ptr<DataStruct::Node> ast_inttype(const std::shared_ptr<DataStruct::Type> &, long ) ;
     std::shared_ptr<DataStruct::Node> ast_floattype(const std::shared_ptr<DataStruct::Type>&,double);
     std::shared_ptr<DataStruct::Node> ast_string(DataStruct::ENCODE , const std::string &);
+    std::shared_ptr<DataStruct::Node> ast_funcdesg(const std::shared_ptr<DataStruct::Type> &, const std::string &);
+    std::shared_ptr<DataStruct::Node> ast_uop(DataStruct::AST_TYPE, const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
+    std::shared_ptr<DataStruct::Node> ast_conv(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
 
     std::shared_ptr<DataStruct::Node> read_generic();
     Vector *read_generic_list(Node **defaultexpr);
