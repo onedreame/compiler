@@ -258,11 +258,8 @@ namespace Utils{
                 if (!ty->fields.empty()) {
                     std::string b;
                     b+="(";b+=kind;
-                    auto key_selector=[](std::pair<std::string, std::shared_ptr<DataStruct::Type>>& pair){ return pair.first;};
-                    std::vector<std::string> keys(dict.size());
-                    std::transform(dict.cbegin(),dict.cend(),keys.begin(),key_selector);
-                    for (auto&key:keys) {
-                        Type *fieldtype = dict_get(ty->fields, key);
+                    for (auto&ele:ty->fields) {
+                        auto fieldtype=ele.second;
                         buf_printf(b, " (%s)", do_ty2s(std::move(dict), fieldtype));
                     }
                     buf_printf(b, ")");

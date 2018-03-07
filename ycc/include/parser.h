@@ -81,6 +81,9 @@ private:
 
     void CHECK_CPP();
     void CHECK_LEX();
+    auto lower=[](const std::string&s){std::string b;
+        for(auto&e:s) b+=tolower(e);
+        return b;};
     std::shared_ptr<DataStruct::Type> make_rectype(bool);
     std::shared_ptr<DataStruct::Type> make_numtype(DataStruct::TYPE_KIND, bool);
     std::shared_ptr<DataStruct::Type> make_func_type(const std::shared_ptr<DataStruct::Type> &, const std::vector<DataStruct::Type> &, bool, bool) ;
@@ -92,6 +95,11 @@ private:
     bool is_arithtype(const std::shared_ptr<DataStruct::Type>&);
     bool is_string(const std::shared_ptr<DataStruct::Type>&);
 
+    std::shared_ptr<DataStruct::Type> read_int_suffix(const std::string &);
+    std::shared_ptr<DataStruct::Node> read_int(const DataStruct::Token &);
+    std::shared_ptr<DataStruct::Node> read_float(const DataStruct::Token &);
+    std::shared_ptr<DataStruct::Node> read_number(const DataStruct::Token &);
+
     int read_intexpr();
     int eval_intexpr(const std::shared_ptr<DataStruct::Node> &, const std::shared_ptr<DataStruct::Node> *);
     int eval_struct_ref(const std::shared_ptr<DataStruct::Node> &, int);
@@ -100,13 +108,18 @@ private:
     std::shared_ptr<DataStruct::Node> ast_lvar(const std::shared_ptr<DataStruct::Type> &, const std::string &);
     std::shared_ptr<DataStruct::Node> ast_inttype(const std::shared_ptr<DataStruct::Type> &, long ) ;
 
+    std::shared_ptr<DataStruct::Node> read_generic();
+    Vector *read_generic_list(Node **defaultexpr);
+    bool type_compatible(Type *a, Type *b);
+    void read_static_assert();
+
     bool is_type(const DataStruct::Token&);
     std::shared_ptr<DataStruct::Type> get_typedef(const std::string&);
     void skip_parentheses(std::vector<DataStruct::Token>&);
     std::shared_ptr<DataStruct::Type> read_decl_spec_opt(DataStruct::QUALITIFIER *);
     std::shared_ptr<DataStruct::Type> read_decl_spec(DataStruct::QUALITIFIER *);
+
     std::shared_ptr<DataStruct::Type> read_typeof();
-    std::shared_ptr<DataStruct::Type> read_comma_expr();
     std::shared_ptr<DataStruct::Type> read_struct_def();
     std::shared_ptr<DataStruct::Type> read_union_def();
     std::shared_ptr<DataStruct::Type> read_enum_def();
@@ -118,14 +131,12 @@ private:
     std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>> update_union_offset(int&,int&,std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>>&);
     void finish_bitfield(int&,int &);
     int compute_padding(int , int );
+
     void squash_unnamed_struct(std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>>&, std::shared_ptr<DataStruct::Type> &, int ) ;
-
-
     int read_bitsize(std::string&,const std::shared_ptr<DataStruct::Type>&);
     std::shared_ptr<DataStruct::Type> read_declarator(std::string*,const std::shared_ptr<DataStruct::Type>&,std::vector<DataStruct::Node>*,DataStruct::DECL_TYPE);
-    std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>> read_rectype_fields(int &,int &,bool);
 
-    void read_static_assert();
+    std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>> read_rectype_fields(int &,int &,bool);
     void ensure_not_void(std::shared_ptr<DataStruct::Type>&);
     int read_alignas();
     bool is_poweroftwo(int);
@@ -139,5 +150,40 @@ private:
     void read_declarator_params_oldstyle(std::vector<DataStruct::Node>*);
     std::shared_ptr<DataStruct::Type> read_declarator_array(const std::shared_ptr<DataStruct::Type> &);
     void skip_type_qualifiers();
+
+    std::shared_ptr<DataStruct::Node> read_var_or_func(const std::string &);
+    int get_compound_assign_op(const DataStruct::Token &);
+    std::shared_ptr<DataStruct::Node> read_stmt_expr();
+    std::shared_ptr<DataStruct::Type> char_type(int);
+    std::shared_ptr<DataStruct::Node> read_primary_expr();
+    std::shared_ptr<DataStruct::Node>  read_subscript_expr(const std::shared_ptr<DataStruct::Node> &);
+    std::shared_ptr<DataStruct::Node> read_postfix_expr_tail(const std::shared_ptr<DataStruct::Node> &);
+    std::shared_ptr<DataStruct::Node> read_postfix_expr();
+    std::shared_ptr<DataStruct::Node> read_unary_incdec(int);
+    std::shared_ptr<DataStruct::Node> read_label_addr(const std::shared_ptr<DataStruct::Token> &);
+    std::shared_ptr<DataStruct::Node> read_unary_addr();
+    std::shared_ptr<DataStruct::Node> read_unary_deref(const std::shared_ptr<DataStruct::Token> &);
+    std::shared_ptr<DataStruct::Node> read_unary_minus();
+    std::shared_ptr<DataStruct::Node> read_unary_bitnot(const std::shared_ptr<DataStruct::Token> &);
+    std::shared_ptr<DataStruct::Node> read_unary_lognot();
+    std::shared_ptr<DataStruct::Node> read_unary_expr();
+    std::shared_ptr<DataStruct::Node> read_compound_literal(const std::shared_ptr<DataStruct::Type> &);
+    std::shared_ptr<DataStruct::Node> read_cast_expr();
+    std::shared_ptr<DataStruct::Node> read_multiplicative_expr();
+    std::shared_ptr<DataStruct::Node> read_additive_expr();
+    std::shared_ptr<DataStruct::Node> read_shift_expr();
+    std::shared_ptr<DataStruct::Node> read_relational_expr();
+    std::shared_ptr<DataStruct::Node> read_equality_expr();
+    std::shared_ptr<DataStruct::Node> read_bitand_expr();
+    std::shared_ptr<DataStruct::Node> read_assignment_expr();
+    std::shared_ptr<DataStruct::Node> read_comma_expr();
+    std::shared_ptr<DataStruct::Node> do_read_conditional_expr(const std::shared_ptr<DataStruct::Node> &);
+    std::shared_ptr<DataStruct::Node> read_conditional_expr();
+    std::shared_ptr<DataStruct::Node> read_logor_expr();
+    std::shared_ptr<DataStruct::Node> read_logand_expr();
+    std::shared_ptr<DataStruct::Node> read_bitor_expr();
+    std::shared_ptr<DataStruct::Node> read_bitxor_expr();
+    std::shared_ptr<DataStruct::Node> read_expr();
+
 };
 #endif //YCC_PARSER_H
