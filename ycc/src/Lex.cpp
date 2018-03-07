@@ -5,6 +5,8 @@
 #include <sys/stat.h>
 #include "../include/Lex.h"
 #include "../include/error.h"
+#include "../include/encode.h"
+
 //根据文件构建文件结构
 std::shared_ptr<DataStruct::File> Lex::make_file(std::shared_ptr<std::ifstream> ifi, std::string filename) {
     std::shared_ptr<DataStruct::File> fi=std::make_shared<DataStruct::File>();
@@ -354,10 +356,6 @@ int Lex::read_escaped_char() {
     return c;
 }
 
-void Lex::write_utf8(std::string &src, int c) {
-
-}
-
 DataStruct::Token Lex::read_string(DataStruct::ENCODE enc)
 {
     std::string src;
@@ -375,7 +373,7 @@ DataStruct::Token Lex::read_string(DataStruct::ENCODE enc)
         bool isucs = (peek() == 'u' || peek() == 'U');
         c = read_escaped_char();
         if (isucs) {
-            write_utf8(src, c);
+            Utils::write_utf8(src, c);
             continue;
         }
         src+=c;

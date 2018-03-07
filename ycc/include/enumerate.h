@@ -22,7 +22,7 @@ namespace DataStruct
         //占位符，代表非法情况
         TPLACEHOLDER,
     };
-
+//c11 6.4.5 String literals
     enum class ENCODE:int{
         ENC_NONE,
         ENC_CHAR16,

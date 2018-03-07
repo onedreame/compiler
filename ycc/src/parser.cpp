@@ -3,6 +3,7 @@
 //
 
 #include "../include/parser.h"
+#include "../include/encode.h"
 
 std::shared_ptr<DataStruct::Type> Parser::make_rectype(bool is_struct){
     return std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_STRUCT,is_struct);
@@ -52,7 +53,7 @@ std::shared_ptr<DataStruct::Type> Parser::make_func_type(const std::shared_ptr<D
 std::shared_ptr<DataStruct::Type> Parser::make_ptr_type(const std::shared_ptr<DataStruct::Type> &ty) {
     return std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_PTR,8,8,ty);
 }
-std::shared_ptr<DataStruct::Type> Parser::make_array_type(std::shared_ptr<DataStruct::Type>&type, int len){
+std::shared_ptr<DataStruct::Type> Parser::make_array_type(const std::shared_ptr<DataStruct::Type>&type, int len){
     int size;
     if (len < 0)
         size = -1;
@@ -188,20 +189,62 @@ int Parser::read_intexpr() {
 }
 
 std::shared_ptr<DataStruct::Node> Parser::ast_lvar(const std::shared_ptr<DataStruct::Type> &ty, const std::string &name) {
-    std::shared_ptr<DataStruct::Node> r=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_LVAR,ty,mark_location());
+    auto r=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_LVAR,ty,mark_location());
     r->lgv=std::make_shared<DataStruct::LGV_Node>();
     r->lgv->varname=name;
     if (localenv)
         localenv->operator[](name)= r;
     if (localvars)
         localvars->push_back(*r);
+    r->setSourceloc(sl);
     return r;
 }
 std::shared_ptr<DataStruct::Node> Parser::ast_inttype(const std::shared_ptr<DataStruct::Type> &ty, long val) {
-    std::shared_ptr<DataStruct::Node> r=std::make_shared<DataStruct::Node>();
+    auto r=std::make_shared<DataStruct::Node>();
     r->ival=val;
     r->setKind(DataStruct::AST_TYPE::AST_LITERAL);
+    r->setSourceloc(sl);
     return r;
+}
+std::shared_ptr<DataStruct::Node> Parser::ast_floattype(const std::shared_ptr<DataStruct::Type>&ty,double v){
+    auto r=std::make_shared<DataStruct::Node>();
+    r->fd=std::make_shared<DataStruct::FD_Node>();
+    r->fd->fval=v;
+    r->setTy(ty);
+    r->setSourceloc(sl);
+    return r;
+}
+std::shared_ptr<DataStruct::Node> Parser::ast_string(DataStruct::ENCODE enc, const std::string &str){
+    std::shared_ptr<DataStruct::Type> ty;
+    std::string body;
+
+    switch (enc) {
+        case DataStruct::ENCODE::ENC_NONE:
+        case DataStruct::ENCODE::ENC_UTF8:
+            ty = make_array_type(TYPE_CHAR, str.length());
+            body = str;
+            break;
+        case DataStruct::ENCODE::ENC_CHAR16: {
+            auto b = Utils::to_utf16(const_cast<char *>(&str[0]), str.length());
+            ty = make_array_type(TYPE_USHORT, b.size() / TYPE_USHORT->size);
+            body = b;
+            break;
+        }
+        case DataStruct::ENCODE::ENC_CHAR32:
+        case DataStruct::ENCODE::ENC_WCHAR: {
+            auto b = Utils::to_utf32(const_cast<char *>(&str[0]), str.size());
+            ty = make_array_type(TYPE_UINT, b.size() / TYPE_UINT->size);
+            body = b;
+            break;
+        }
+    }
+    auto node =std::make_shared<DataStruct::Node>();
+    node->setTy(ty);
+    node->setKind(DataStruct::AST_TYPE::AST_LITERAL);
+    node->setSourceloc(sl);
+    node->str=std::make_shared<DataStruct::STR_Node>();
+    node->str->sval=body;
+    return node;
 }
 //c中的类型，可以是关键字，auto，const，char等，或者采用typedef自定义的类型
 bool Parser::is_type(const DataStruct::Token&tok){
@@ -368,7 +411,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_float(const DataStruct::Token &to
     auto &s = *(tok.sval);
     char *end;
     double v = strtod(&s[0], &end);
-    // C11 6.4.4.2p4: The default type for flonum is double.
+    // C11 6.4.4.2 p4:
     if (lower(std::string(end))== "l")
         return ast_floattype(TYPE_LDOUBLE, v);
     if (lower(std::string(end))== "f")
@@ -378,7 +421,9 @@ std::shared_ptr<DataStruct::Node> Parser::read_float(const DataStruct::Token &to
     return ast_floattype(TYPE_DOUBLE, v);
 }
 std::shared_ptr<DataStruct::Node> Parser::read_number(const DataStruct::Token &tok){
-
+    auto &s = *(tok.sval);
+    bool isfloat = strpbrk(&s[0], ".pP") || (lower(s).substr(0,2) !="0x"&& strpbrk(&s[0], "eE"));
+    return isfloat ? read_float(tok) : read_int(tok);
 }
 std::shared_ptr<DataStruct::Node> Parser::read_generic(){
     CHECK_CPP();
@@ -1022,13 +1067,22 @@ int Parser::get_compound_assign_op(const DataStruct::Token &tok){
 std::shared_ptr<DataStruct::Node> Parser::read_stmt_expr(){
 
 }
-std::shared_ptr<DataStruct::Type> Parser::char_type(int enc){
-
+std::shared_ptr<DataStruct::Type> Parser::char_type(DataStruct::ENCODE enc){
+    switch (enc) {
+        case DataStruct::ENCODE::ENC_NONE:
+        case DataStruct::ENCODE::ENC_WCHAR:
+            return TYPE_INT;
+        case DataStruct::ENCODE::ENC_CHAR16:
+            return TYPE_USHORT;
+        case DataStruct::ENCODE::ENC_CHAR32:
+            return TYPE_UINT;
+    }
+    Error::error("internal error");
 }
 std::shared_ptr<DataStruct::Node> Parser::read_primary_expr(){
     CHECK_LEX();
     CHECK_CPP();
-    const DataStruct::Token &tok = macro->read_token();
+    DataStruct::Token tok = macro->read_token();
     if (tok.kind==DataStruct::TOKEN_TYPE::TEOF) return nullptr;
     if (lex->is_keyword(tok, lex->get_keywords("("))) {
         if (macro->next(lex->get_keywords("{")))
@@ -1046,9 +1100,9 @@ std::shared_ptr<DataStruct::Node> Parser::read_primary_expr(){
         case DataStruct::TOKEN_TYPE::TNUMBER:
             return read_number(tok);
         case DataStruct::TOKEN_TYPE::TCHAR:
-            return ast_inttype(char_type(tok->enc), tok->c);
+            return ast_inttype(char_type(tok.enc), tok.c);
         case DataStruct::TOKEN_TYPE::TSTRING:
-            return ast_string(tok.enc, tok->sval, tok->slen);
+            return ast_string(tok.enc, *(tok.sval));
         case DataStruct::TOKEN_TYPE::TKEYWORD:
             lex->retreat_token(tok);
             return nullptr;

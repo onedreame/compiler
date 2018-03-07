@@ -81,14 +81,12 @@ private:
 
     void CHECK_CPP();
     void CHECK_LEX();
-    auto lower=[](const std::string&s){std::string b;
-        for(auto&e:s) b+=tolower(e);
-        return b;};
+    auto lower=[](const std::string&s){std::string b;for(auto&e:s) b+=tolower(e);return b;};
     std::shared_ptr<DataStruct::Type> make_rectype(bool);
     std::shared_ptr<DataStruct::Type> make_numtype(DataStruct::TYPE_KIND, bool);
     std::shared_ptr<DataStruct::Type> make_func_type(const std::shared_ptr<DataStruct::Type> &, const std::vector<DataStruct::Type> &, bool, bool) ;
     std::shared_ptr<DataStruct::Type> make_ptr_type(const std::shared_ptr<DataStruct::Type> &);
-    std::shared_ptr<DataStruct::Type> make_array_type(std::shared_ptr<DataStruct::Type>&, int );
+    std::shared_ptr<DataStruct::Type> make_array_type(const std::shared_ptr<DataStruct::Type>&, int );
 
     bool is_inttype(const std::shared_ptr<DataStruct::Type>&);
     bool is_flotype(const std::shared_ptr<DataStruct::Type>&);
@@ -107,6 +105,8 @@ private:
     DataStruct::SourceLoc& mark_location();
     std::shared_ptr<DataStruct::Node> ast_lvar(const std::shared_ptr<DataStruct::Type> &, const std::string &);
     std::shared_ptr<DataStruct::Node> ast_inttype(const std::shared_ptr<DataStruct::Type> &, long ) ;
+    std::shared_ptr<DataStruct::Node> ast_floattype(const std::shared_ptr<DataStruct::Type>&,double);
+    std::shared_ptr<DataStruct::Node> ast_string(DataStruct::ENCODE , const std::string &);
 
     std::shared_ptr<DataStruct::Node> read_generic();
     Vector *read_generic_list(Node **defaultexpr);
@@ -154,7 +154,7 @@ private:
     std::shared_ptr<DataStruct::Node> read_var_or_func(const std::string &);
     int get_compound_assign_op(const DataStruct::Token &);
     std::shared_ptr<DataStruct::Node> read_stmt_expr();
-    std::shared_ptr<DataStruct::Type> char_type(int);
+    std::shared_ptr<DataStruct::Type> char_type(DataStruct::ENCODE);
     std::shared_ptr<DataStruct::Node> read_primary_expr();
     std::shared_ptr<DataStruct::Node>  read_subscript_expr(const std::shared_ptr<DataStruct::Node> &);
     std::shared_ptr<DataStruct::Node> read_postfix_expr_tail(const std::shared_ptr<DataStruct::Node> &);

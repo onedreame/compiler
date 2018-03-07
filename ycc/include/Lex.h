@@ -164,7 +164,6 @@ private:
     DataStruct::Token read_string(DataStruct::ENCODE enc);
     DataStruct::Token read_char(DataStruct::ENCODE);
     int read_escaped_char();
-    void write_utf8(std::string&,int);
     bool is_valid_ucn(unsigned int);
     DataStruct::Token read_hash_digraph();
 };
