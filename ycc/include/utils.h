@@ -42,6 +42,10 @@ namespace Utils
     extern std::string BUILD_DIR;
     std::string ty2s(const std::shared_ptr<DataStruct::Type>&);
     std::string tok2s(const DataStruct::Token& tok);
+    std::string node2s(const std::shared_ptr<DataStruct::Node> &node);
     std::string encoding_prefix(DataStruct::ENCODE enc);
+    void uop_to_string(std::string &b, std::string &op, const std::shared_ptr<DataStruct::Node> &node);
+    void do_node2s(std::string&b, const std::shared_ptr<DataStruct::Node> &node);
+    void binop_to_string(std::string &b, std::string &op, const std::shared_ptr<DataStruct::Node> &node);
 }
 #endif //YCC_UTILS_H

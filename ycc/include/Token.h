@@ -391,6 +391,71 @@ namespace DataStruct {
         std::shared_ptr<GOLA_Node> gola;
         std::shared_ptr<STRREF_Node> strref;
 //        };
+        // float or double
+        struct {
+            double fval;
+            std::string flabel;
+        };
+        // string
+        struct {
+            std::string sval;
+            std::string slabel;
+        };
+        // local/global 变量
+        struct {
+            std::string varname;
+            // local
+            int loff;
+            std::vector<DataStruct::Token> lvarinit;
+            // global
+            std::string glabel;
+        };
+        // binary op
+        struct {
+            std::shared_ptr<Node> left;
+            std::shared_ptr<Node> right;
+        };
+        // 函数调用或声明
+        struct {
+            std::string fname;
+            // Function call
+            std::vector<Type> args;
+            std::shared_ptr<Type> ftype;
+            // Function pointer or function designator
+            std::shared_ptr<Node> fptr;
+            // Function declaration
+            std::vector<Type> params;
+            std::vector<Type> localvars;
+            std::shared_ptr<Node> body;
+        };
+        // 声明
+        struct {
+            std::shared_ptr<Node> declvar;
+            std::vector<Token> declinit;
+        };
+        // 初始化
+        struct {
+            std::shared_ptr<Node> initval;
+            int initoff;
+            std::shared_ptr<Type> totype;
+        };
+        // if语句或ternary op
+        struct {
+            std::shared_ptr<Node> cond;
+            std::shared_ptr<Node> then;
+            std::shared_ptr<Node> els;
+        };
+        // goto label
+        struct {
+            std::string label;
+            std::string newlabel;
+        };
+        // struct引用
+        struct {
+            std::shared_ptr<Node> struc;
+            std::string field;
+            std::shared_ptr<Type> fieldtype;
+        };
     private:
         AST_TYPE kind;
         std::shared_ptr<Type> ty;
@@ -399,87 +464,5 @@ namespace DataStruct {
         Node& copyUnion(const Node& r);
         void clear();
     };
-//    typedef struct Node {
-//        int kind;
-//        Type *ty;
-//        SourceLoc *sourceLoc;
-//        union {
-//            // Char, int, or long
-//            long ival;
-//            // Float or double
-//            struct {
-//                double fval;
-//                char *flabel;
-//            };
-//            // String
-//            struct {
-//                char *sval;
-//                char *slabel;
-//            };
-//            // Local/global variable
-//            struct {
-//                char *varname;
-//                // local
-//                int loff;
-//                Vector *lvarinit;
-//                // global
-//                char *glabel;
-//            };
-//            // Binary operator
-//            struct {
-//                struct Node *left;
-//                struct Node *right;
-//            };
-//            // Unary operator
-//            struct {
-//                struct Node *operand;
-//            };
-//            // Function call or function declaration
-//            struct {
-//                char *fname;
-//                // Function call
-//                Vector *args;
-//                struct Type *ftype;
-//                // Function pointer or function designator
-//                struct Node *fptr;
-//                // Function declaration
-//                Vector *params;
-//                Vector *localvars;
-//                struct Node *body;
-//            };
-//            // Declaration
-//            struct {
-//                struct Node *declvar;
-//                Vector *declinit;
-//            };
-//            // Initializer
-//            struct {
-//                struct Node *initval;
-//                int initoff;
-//                Type *totype;
-//            };
-//            // If statement or ternary operator
-//            struct {
-//                struct Node *cond;
-//                struct Node *then;
-//                struct Node *els;
-//            };
-//            // Goto and label
-//            struct {
-//                char *label;
-//                char *newlabel;
-//            };
-//            // Return statement
-//            struct Node *retval;
-//            // Compound statement
-//            Vector *stmts;
-//            // Struct reference
-//            struct {
-//                struct Node *struc;
-//                char *field;
-//                Type *fieldtype;
-//            };
-//        };
-//    } Node;
 }
 #endif //YCC_TOKEN_H

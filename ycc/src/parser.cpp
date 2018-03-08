@@ -68,30 +68,285 @@ DataStruct::SourceLoc& Parser::mark_location() {
     sl={tok.file->name,tok.line};
     return sl;
 }
-
-char *make_tempname() {
+//构建temp name，格式为.T(id)
+std::string  Parser::make_tempname() {
     static int c = 0;
-    return format(".T%d", c++);
+    return Utils::format(".T%d", c++);
+}
+//构建编号标签，格式为 .L(id)
+std::string Parser::make_label() {
+    static int c = 0;
+    return Utils::format(".L%d", c++);
+}
+//构建static label，格式为 .S(id).(name)
+std::string Parser::make_static_label(const std::string &name) {
+    static int c = 0;
+    return Utils::format(".S%d.%s", c++, name);
 }
 
-char *make_label() {
-    static int c = 0;
-    return format(".L%d", c++);
+Parser::Case Parser::make_case(int beg, int end, const std::string &label) {
+    return {beg,end,label};
 }
-
-static char *make_static_label(char *name) {
-    static int c = 0;
-    return format(".S%d.%s", c++, name);
-}
-
-static Case *make_case(int beg, int end, char *label) {
-    Case *r = malloc(sizeof(Case));
-    r->beg = beg;
-    r->end = end;
-    r->label = label;
+//local value: 左值有名字和类型两种属性
+std::shared_ptr<DataStruct::Node> Parser::ast_lvar(const std::shared_ptr<DataStruct::Type> &ty, const std::string &name) {
+    auto r=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_LVAR,ty,sl);
+    r->varname=name;
+    if (localenv)
+        localenv->operator[](name)= r;
+    if (localvars)
+        localvars->push_back(*r);
     return r;
 }
+//global value: unlike local value,global value has additional global name
+std::shared_ptr<DataStruct::Node> Parser::ast_gvar(const std::shared_ptr<DataStruct::Type> &ty, const std::string &name) {
+    auto r=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_LVAR,ty,sl);
+    r->glabel=name;
+    r->varname=name;
+    globalenv->operator[](name)=r;
+    return r;
+}
+std::shared_ptr<DataStruct::Node> Parser::ast_inttype(const std::shared_ptr<DataStruct::Type> &ty, long val) {
+    auto r=std::make_shared<DataStruct::Node>();
+    r->ival=val;
+    r->setKind(DataStruct::AST_TYPE::AST_LITERAL);
+    r->setSourceloc(sl);
+    r->setTy(ty);
+    return r;
+}
+std::shared_ptr<DataStruct::Node> Parser::ast_floattype(const std::shared_ptr<DataStruct::Type>&ty,double v){
+    auto r=std::make_shared<DataStruct::Node>();
+    r->fval=v;
+    r->setTy(ty);
+    r->setSourceloc(sl);
+    r->setKind(DataStruct::AST_TYPE::AST_LITERAL);
+    return r;
+}
+//string: its attr is obvious
+std::shared_ptr<DataStruct::Node> Parser::ast_string(DataStruct::ENCODE enc, const std::string &str){
+    std::shared_ptr<DataStruct::Type> ty;
+    std::string body;
 
+    switch (enc) {
+        case DataStruct::ENCODE::ENC_NONE:
+        case DataStruct::ENCODE::ENC_UTF8:
+            ty = make_array_type(TYPE_CHAR, str.length());
+            body = str;
+            break;
+        case DataStruct::ENCODE::ENC_CHAR16: {
+            auto b = Utils::to_utf16(const_cast<char *>(&str[0]), str.length());
+            ty = make_array_type(TYPE_USHORT, b.size() / TYPE_USHORT->size);
+            body = b;
+            break;
+        }
+        case DataStruct::ENCODE::ENC_CHAR32:
+        case DataStruct::ENCODE::ENC_WCHAR: {
+            auto b = Utils::to_utf32(const_cast<char *>(&str[0]), str.size());
+            ty = make_array_type(TYPE_UINT, b.size() / TYPE_UINT->size);
+            body = b;
+            break;
+        }
+    }
+    auto node =std::make_shared<DataStruct::Node>();
+    node->setTy(ty);
+    node->setKind(DataStruct::AST_TYPE::AST_LITERAL);
+    node->setSourceloc(sl);
+    node->sval=body;
+    return node;
+}
+//function describe: we only need its name,and its detailed information is stored in its type.
+std::shared_ptr<DataStruct::Node> Parser::ast_funcdesg(const std::shared_ptr<DataStruct::Type> &ty, const std::string &fname) {
+    auto node=std::make_shared<DataStruct::Node>();
+    node->setSourceloc(sl);
+    node->setKind(DataStruct::AST_TYPE::AST_FUNCDESG);
+    node->setTy(ty);
+    node->fname=fname;
+    return node;
+}
+//unary operator
+std::shared_ptr<DataStruct::Node> Parser::ast_uop(DataStruct::AST_TYPE kind, const std::shared_ptr<DataStruct::Type> &ty, const std::shared_ptr<DataStruct::Node> &operand) {
+    auto node=std::make_shared<DataStruct::Node>();
+    node->setKind(kind);
+    node->setTy(ty);
+    node->setSourceloc(sl);
+    node->unop=operand;
+    return node;
+}
+//binary operator
+std::shared_ptr<DataStruct::Node> Parser::ast_biop(DataStruct::AST_TYPE kind,
+                                           const std::shared_ptr<DataStruct::Type> &ty,
+                                           const std::shared_ptr<DataStruct::Node> &left,
+                                           const std::shared_ptr<DataStruct::Node> &right){
+    auto node=std::make_shared<DataStruct::Node>(kind,ty,sl);
+    node->left=left;
+    node->right=right;
+    return node;
+}
+//converison: for conversion,we need to know that which node to conversion and which type converted to.
+std::shared_ptr<DataStruct::Node> Parser::ast_conv(const std::shared_ptr<DataStruct::Type> &totype, const std::shared_ptr<DataStruct::Node> &val) {
+    auto node=std::make_shared<DataStruct::Node>();
+    node->setKind(DataStruct::AST_TYPE::AST_CONV);
+    node->setSourceloc(sl);
+    node->setTy(totype);
+    node->unop=val;
+    return node;
+}
+//typedef just creates a alias name of a type
+std::shared_ptr<DataStruct::Node> Parser::ast_typedef(const std::shared_ptr<DataStruct::Type>&ty, const std::string&name){
+    auto node=std::make_shared<DataStruct::Node>();
+    node->setSourceloc(sl);
+    node->setTy(ty);
+    node->setKind(DataStruct::AST_TYPE::AST_TYPEDEF);
+    env()->operator[](name)=node;
+    return node;
+}
+//static local value: static local value is global in its context,so it has global name
+std::shared_ptr<DataStruct::Node> Parser::ast_static_lvar(const std::shared_ptr<DataStruct::Type> &ty, const std::string &name) {
+    auto node=std::make_shared<DataStruct::Node>();
+    node->setKind(DataStruct::AST_TYPE::AST_GVAR);
+    node->setTy(ty);
+    node->setSourceloc(sl);
+    node->varname=name;
+    node->glabel=make_static_label(name);
+    if(!localenv)
+        Error::error("localenv is null");
+    localenv->operator[](name)= node;
+    return node;
+}
+//function call: what we want is the return value (if exits) of the call.
+std::shared_ptr<DataStruct::Node> Parser::ast_funcall(const std::shared_ptr<DataStruct::Type> &ftype,
+                                              const std::string &fname,
+                                              const std::vector<DataStruct::Type> &args){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_FUNCALL,ftype->rettype,sl);
+    node->fname=fname;
+    node->args=args;
+    node->ftype=ftype;
+    return node;
+}
+//function ptr call: for function ptr,we should first resolve its real type,then the last is the same as funcall.
+std::shared_ptr<DataStruct::Node> Parser::ast_funcptr_call(std::shared_ptr<DataStruct::Node>&fptr,
+                                                   const std::vector<DataStruct::Type> &args) {
+    if (fptr->getTy()->kind!=DataStruct::TYPE_KIND::KIND_PTR)
+        Error::error("%s is not a func pointer",Utils::ty2s(fptr->getTy()));
+    if (fptr->getTy()->ptr->kind!=DataStruct::TYPE_KIND::KIND_FUNC)
+        Error::error("%s is not a func",Utils::ty2s(fptr->getTy()));
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_FUNCPTR_CALL,fptr->getTy()->ptr->rettype,sl);
+    node->fptr=fptr;
+    node->args=args;
+    return node;
+}
+//func: for func,we need to know its name,params,emmmm..I will think it later
+std::shared_ptr<DataStruct::Node> Parser::ast_func(const std::shared_ptr<DataStruct::Type> &ty,
+                                            const std::string &fname,
+                                            const std::vector<DataStruct::Type>&params,
+                                            const std::shared_ptr<DataStruct::Node> &body,
+                                            const std::vector<DataStruct::Type> &localvars) {
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_FUNC,ty,sl);
+    node->fname=fname;
+    node->params=params;
+    node->localvars=localvars;
+    node->body=body;
+    return node;
+}
+//declaration: I will complete it later,just a placeholder
+std::shared_ptr<DataStruct::Node> Parser::ast_decl(const std::shared_ptr<DataStruct::Node> &var, const std::vector<DataStruct::Type> &init) {
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_DECL, nullptr,sl);
+    node->declvar=var;
+//    node->declinit=init;
+    return node;
+}
+//initializer: for initializer,we need to know its initial value,and there may be conversions,so we also
+//need to know the type it will converts to. emmm.. I don't know what is the meaning of initoff,I will think it later.
+std::shared_ptr<DataStruct::Node> Parser::ast_init(const std::shared_ptr<DataStruct::Node> &val,
+                                           const std::shared_ptr<DataStruct::Type> &totype, int off) {
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_INIT, nullptr,sl);
+    node->initval=val;
+    node->initoff=off;
+    node->totype=totype;
+    return node;
+}
+//if: for if, we need to know its condition ahd its branches.
+std::shared_ptr<DataStruct::Node> Parser::ast_if(const std::shared_ptr<DataStruct::Node> &cond,
+                                         const std::shared_ptr<DataStruct::Node> &then,
+                                         const std::shared_ptr<DataStruct::Node> &els){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_IF, nullptr,sl);
+    node->cond=cond;
+    node->then=then;
+    node->els=els;
+    return node;
+}
+//ternary: like if,but what is the meaning of the type?
+std::shared_ptr<DataStruct::Node> Parser::ast_ternary(const std::shared_ptr<DataStruct::Type> &ty,
+                                              const std::shared_ptr<DataStruct::Node> &cond,
+                                              const std::shared_ptr<DataStruct::Node> &then,
+                                              const std::shared_ptr<DataStruct::Node> &els){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_TERNARY, ty,sl);
+    node->cond=cond;
+    node->then=then;
+    node->els=els;
+    return node;
+}
+//return: for return ,we only want to know the value it returns.
+std::shared_ptr<DataStruct::Node> Parser::ast_return(const std::shared_ptr<DataStruct::Node> &retval){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_RETURN, nullptr,sl);
+    node->retval=retval;
+    return node;
+}
+//struct: we need to know members of a named struct;
+std::shared_ptr<DataStruct::Node> Parser::ast_struct_ref(const std::shared_ptr<DataStruct::Type> &ty,
+                                                 const std::shared_ptr<DataStruct::Node> &struc,
+                                                 const std::string &name){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_STRUCT_REF, ty,sl);
+    node->struc=struc;
+    node->field=name;
+    return node;
+}
+//goto: for goto,we need to know the label where to jump
+std::shared_ptr<DataStruct::Node> Parser::ast_goto(const std::string &label){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_GOTO, nullptr,sl);
+    node->label=label;
+    return node;
+}
+//jump: for jump,what is the meaning of newlabe?
+std::shared_ptr<DataStruct::Node> Parser::ast_jump(const std::string &label){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_GOTO, nullptr,sl);
+    node->label=label;
+    node->newlabel=label;
+    return node;
+}
+//computed_goto: we need to know the expression to compute
+std::shared_ptr<DataStruct::Node> Parser::ast_computed_goto( const std::shared_ptr<DataStruct::Node> &expr){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_COMPUTED_GOTO, nullptr,sl);
+    node->unop=expr;
+    return node;
+}
+//label: just create a node with label name
+std::shared_ptr<DataStruct::Node> Parser::ast_label(const std::string &label){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_LABEL, nullptr,sl);
+    node->label=label;
+    return node;
+}
+//destion: like label,with a additional newlabel attribute.
+std::shared_ptr<DataStruct::Node> Parser::ast_dest(const std::string &label){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_LABEL, nullptr,sl);
+    node->label=label;
+    node->newlabel=label;
+    return node;
+}
+//label address??????
+std::shared_ptr<DataStruct::Node> Parser::ast_label_addr(const std::string &label){
+    auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::OP_LABEL_ADDR, make_ptr_type(TYPE_VOID),sl);
+    node->label=label;
+    return node;
+}
+void Parser::ensure_lvalue(const std::shared_ptr<DataStruct::Node> &node){
+    switch (node->getKind()) {
+        case DataStruct::AST_TYPE::AST_LVAR: case DataStruct::AST_TYPE::AST_GVAR:
+        case DataStruct::AST_TYPE::AST_DEREF: case DataStruct::AST_TYPE::AST_STRUCT_REF:
+            return;
+        default:
+            Error::error("lvalue expected, but got %s", node2s(node));
+    }
+}
 bool Parser::is_inttype(const std::shared_ptr<DataStruct::Type> &ty) {
     switch (ty->kind) {
         case DataStruct::TYPE_KIND::KIND_BOOL: case DataStruct::TYPE_KIND::KIND_CHAR:
@@ -102,7 +357,6 @@ bool Parser::is_inttype(const std::shared_ptr<DataStruct::Type> &ty) {
             return false;
     }
 }
-
 bool Parser::is_flotype(const std::shared_ptr<DataStruct::Type> &ty) {
     switch (ty->kind) {
         case DataStruct::TYPE_KIND::KIND_FLOAT: case DataStruct::TYPE_KIND::KIND_DOUBLE:
@@ -116,9 +370,12 @@ bool Parser::is_flotype(const std::shared_ptr<DataStruct::Type> &ty) {
 bool Parser::is_arithtype(const std::shared_ptr<DataStruct::Type> &ty) {
     return is_inttype(ty) || is_flotype(ty);
 }
-
 bool Parser::is_string(const std::shared_ptr<DataStruct::Type> &ty) {
     return ty->kind == DataStruct::TYPE_KIND::KIND_ARRAY && ty->ptr->kind == DataStruct::TYPE_KIND::KIND_CHAR;
+}
+std::shared_ptr<DataStruct::Type> copy_incomplete_type(const std::shared_ptr<DataStruct::Type> &ty) {
+    if (!ty) return nullptr;
+    return (ty->len == -1) ? std::make_shared<DataStruct::Type>(*ty) : ty;
 }
 
 int Parser::eval_struct_ref(const std::shared_ptr<DataStruct::Node> &node, int offset) {
@@ -126,7 +383,6 @@ int Parser::eval_struct_ref(const std::shared_ptr<DataStruct::Node> &node, int o
         return eval_struct_ref(node->struc, node->getTy()->offset + offset);
     return eval_intexpr(node, NULL) + offset;
 }
-
 int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, const std::shared_ptr<DataStruct::Node> *addr) {
     switch (node->getKind()) {
         case DataStruct::AST_TYPE::AST_LITERAL:
@@ -184,92 +440,9 @@ int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, const st
             Error::error("Integer expression expected, but got %s", node2s(node));
     }
 }
+
 int Parser::read_intexpr() {
     return eval_intexpr(read_conditional_expr(), nullptr);
-}
-
-std::shared_ptr<DataStruct::Node> Parser::ast_lvar(const std::shared_ptr<DataStruct::Type> &ty, const std::string &name) {
-    auto r=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_LVAR,ty,mark_location());
-    r->lgv=std::make_shared<DataStruct::LGV_Node>();
-    r->lgv->varname=name;
-    if (localenv)
-        localenv->operator[](name)= r;
-    if (localvars)
-        localvars->push_back(*r);
-    r->setSourceloc(sl);
-    return r;
-}
-std::shared_ptr<DataStruct::Node> Parser::ast_inttype(const std::shared_ptr<DataStruct::Type> &ty, long val) {
-    auto r=std::make_shared<DataStruct::Node>();
-    r->ival=val;
-    r->setKind(DataStruct::AST_TYPE::AST_LITERAL);
-    r->setSourceloc(sl);
-    return r;
-}
-std::shared_ptr<DataStruct::Node> Parser::ast_floattype(const std::shared_ptr<DataStruct::Type>&ty,double v){
-    auto r=std::make_shared<DataStruct::Node>();
-    r->fd=std::make_shared<DataStruct::FD_Node>();
-    r->fd->fval=v;
-    r->setTy(ty);
-    r->setSourceloc(sl);
-    return r;
-}
-std::shared_ptr<DataStruct::Node> Parser::ast_string(DataStruct::ENCODE enc, const std::string &str){
-    std::shared_ptr<DataStruct::Type> ty;
-    std::string body;
-
-    switch (enc) {
-        case DataStruct::ENCODE::ENC_NONE:
-        case DataStruct::ENCODE::ENC_UTF8:
-            ty = make_array_type(TYPE_CHAR, str.length());
-            body = str;
-            break;
-        case DataStruct::ENCODE::ENC_CHAR16: {
-            auto b = Utils::to_utf16(const_cast<char *>(&str[0]), str.length());
-            ty = make_array_type(TYPE_USHORT, b.size() / TYPE_USHORT->size);
-            body = b;
-            break;
-        }
-        case DataStruct::ENCODE::ENC_CHAR32:
-        case DataStruct::ENCODE::ENC_WCHAR: {
-            auto b = Utils::to_utf32(const_cast<char *>(&str[0]), str.size());
-            ty = make_array_type(TYPE_UINT, b.size() / TYPE_UINT->size);
-            body = b;
-            break;
-        }
-    }
-    auto node =std::make_shared<DataStruct::Node>();
-    node->setTy(ty);
-    node->setKind(DataStruct::AST_TYPE::AST_LITERAL);
-    node->setSourceloc(sl);
-    node->str=std::make_shared<DataStruct::STR_Node>();
-    node->str->sval=body;
-    return node;
-}
-std::shared_ptr<DataStruct::Node> Parser::ast_funcdesg(const std::shared_ptr<DataStruct::Type> &ty, const std::string &fname) {
-    auto node=std::make_shared<DataStruct::Node>();
-    node->setSourceloc(sl);
-    node->setKind(DataStruct::AST_TYPE::AST_FUNCDESG);
-    node->setTy(ty);
-    node->fcfd=std::make_shared<DataStruct::FCFD_Node>();
-    node->fcfd->fname=fname;
-    return node;
-}
-std::shared_ptr<DataStruct::Node> Parser::ast_uop(DataStruct::AST_TYPE kind, const std::shared_ptr<DataStruct::Type> &ty, const std::shared_ptr<DataStruct::Node> &operand) {
-    auto node=std::make_shared<DataStruct::Node>();
-    node->setKind(kind);
-    node->setTy(ty);
-    node->setSourceloc(sl);
-    node->unop=operand;
-    return node;
-}
-std::shared_ptr<DataStruct::Node> Parser::ast_conv(const std::shared_ptr<DataStruct::Type> &totype, const std::shared_ptr<DataStruct::Node> &val) {
-    auto node=std::make_shared<DataStruct::Node>();
-    node->setKind(DataStruct::AST_TYPE::AST_CONV);
-    node->setSourceloc(sl);
-    node->setTy(totype);
-    node->unop=val;
-    return node;
 }
 //c中的类型，可以是关键字，auto，const，char等，或者采用typedef自定义的类型
 bool Parser::is_type(const DataStruct::Token&tok){
@@ -329,8 +502,8 @@ bool Parser::is_funcdef() {
     return r;
 }
 void Parser::skip_parentheses(std::vector<DataStruct::Token>&buf){
-    int nest=0;
     CHECK_LEX();
+    int nest=0;
     while (true){
         const DataStruct::Token& tok=lex->lex();
         if (tok.kind==DataStruct::TOKEN_TYPE::TEOF)
@@ -344,7 +517,54 @@ void Parser::skip_parentheses(std::vector<DataStruct::Token>&buf){
         buf.push_back(tok);
     }
 }
+std::vector<DataStruct::Node> Parser::read_oldstyle_param_args() {
+    CHECK_CPP();
+    CHECK_LEX();
+    auto orig = localenv;
+    localenv = nullptr;
+    std::vector<DataStruct::Node> r;
+    for (;;) {
+        if (lex->is_keyword(macro->peek_token(), lex->get_keywords("{")))
+            break;
+        if (!is_type(macro->peek_token()))
+            Error::errort(macro->peek_token(), "K&R-style declarator expected, but got %s", Utils::tok2s(macro->peek_token()));
+        read_decl(&r, false);
+    }
+    localenv = orig;
+    return r;
+}
+static void update_oldstyle_param_type(Vector *params, Vector *vars) {
+    for (int i = 0; i < vec_len(vars); i++) {
+        Node *decl = vec_get(vars, i);
+        assert(decl->kind == AST_DECL);
+        Node *var = decl->declvar;
+        assert(var->kind == AST_LVAR);
+        for (int j = 0; j < vec_len(params); j++) {
+            Node *param = vec_get(params, j);
+            assert(param->kind == AST_LVAR);
+            if (strcmp(param->varname, var->varname))
+                continue;
+            param->ty = var->ty;
+            goto found;
+        }
+        Error::error("missing parameter: %s", var->varname);
+        found:;
+    }
+}
 
+void Parser::read_oldstyle_param_type(std::vector<DataStruct::Node> *params) {
+    auto vars = read_oldstyle_param_args();
+    update_oldstyle_param_type(params, vars);
+}
+
+static Vector *param_types(Vector *params) {
+    Vector *r = make_vector();
+    for (int i = 0; i < vec_len(params); i++) {
+        Node *param = vec_get(params, i);
+        vec_push(r, param->ty);
+    }
+    return r;
+}
 //读取声明和函数定义
 std::shared_ptr<std::vector<DataStruct::Node>>& Parser::read_toplevels()
 {
@@ -356,7 +576,7 @@ std::shared_ptr<std::vector<DataStruct::Node>>& Parser::read_toplevels()
         if (is_funcdef())
             toplevels->emplace_back(read_funcdef());
         else
-            read_decl(toplevels, true);
+            read_decl(toplevels.get(), true);
     }
 }
 
@@ -374,16 +594,17 @@ DataStruct::Token Parser::read_funcdef() {
     CHECK_CPP();
     DataStruct::QUALITIFIER sclass;
     std::shared_ptr<DataStruct::Type> basetype = read_decl_spec_opt(&sclass);
-    localenv = make_map_parent(globalenv);
-    gotos = make_vector();
-    labels = make_map();
+    localenv=std::make_shared<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>();
+    scope[localenv]=globalenv;
+    gotos.clear();
+    labels.clear();
     std::string name;
     std::vector<DataStruct::Node> params;
     auto functype = read_declarator(&name, basetype, &params, DataStruct::DECL_TYPE::DECL_BODY);
     if (functype->oldstyle) {
         if (params.empty())
             functype->hasva = false;
-        read_oldstyle_param_type(params);
+        read_oldstyle_param_type(&params);
         functype->params = param_types(params);
     }
     functype->isstatic = (sclass == DataStruct::QUALITIFIER::S_STATIC);
@@ -482,6 +703,50 @@ void Parser::read_static_assert(){
     macro->expect(lex->get_keywords(";"));
     if (!val)
         Error::errort(tok, "_Static_assert failure: %s", *(tok.sval));
+}
+void Parser::read_static_local_var(const std::shared_ptr<DataStruct::Type>& ty, const std::string& name){
+    CHECK_CPP();
+    CHECK_LEX();
+    auto var = ast_static_lvar(ty, name);
+    std::vector<DataStruct::Node> init;
+    if (macro->next(lex->get_keywords("="))) {
+        auto orig = localenv;
+        localenv = nullptr;
+        init = read_decl_init(ty);
+        localenv = orig;
+    }
+    toplevels->emplace_back(ast_decl(var, init));
+}
+void Parser::read_decl(std::vector<DataStruct::Node>* block, bool isglobal){
+    CHECK_LEX();
+    CHECK_CPP();
+    DataStruct::QUALITIFIER sclass = DataStruct::QUALITIFIER::S_PLACEHOLDER;
+    auto basetype = read_decl_spec_opt(&sclass);
+    if (macro->next(lex->get_keywords(";")))
+        return;
+    for (;;) {
+        std::string name;
+        auto ty = read_declarator(&name, copy_incomplete_type(basetype), nullptr, DataStruct::DECL_TYPE::DECL_BODY);
+        ty->isstatic = (sclass == DataStruct::QUALITIFIER::S_STATIC);
+        if (sclass == DataStruct::QUALITIFIER::S_TYPEDEF) {
+            ast_typedef(ty, name);
+        } else if (ty->isstatic && !isglobal) {
+            ensure_not_void(ty);
+            read_static_local_var(ty, name);
+        } else {
+            ensure_not_void(ty);
+            Node *var = (isglobal ? ast_gvar : ast_lvar)(ty, name);
+            if (next_token('=')) {
+                block->emplace_back(ast_decl(var, read_decl_init(ty)));
+            } else if (sclass != DataStruct::QUALITIFIER::S_EXTERN && ty->kind != DataStruct::TYPE_KIND::KIND_FUNC) {
+                block->emplace_back(ast_decl(var, nullptr));
+            }
+        }
+        if (macro->next(lex->get_keywords(";"))
+            return;
+        if (!macro->next(lex->get_keywords(","))
+            Error::errort(macro->peek_token(), "';' or ',' are expected, but got %s", Utils::tok2s(macro->peek_token()));
+    }
 }
 //函数如果未定义返回类型，则默认返回int
 std::shared_ptr<DataStruct::Type> Parser::read_decl_spec_opt(DataStruct::QUALITIFIER *sclass){
