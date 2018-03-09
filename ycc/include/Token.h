@@ -322,25 +322,25 @@ namespace DataStruct {
 //            std::shared_ptr<Type> fieldtype;
 //        };// struct引用
         Node():tok(NODETYPE::CIL),ival(0){}
-        Node(const Node&r):kind(r.getKind()),ty(r.getTy()),sourceloc(r.getSourceloc()){copyUnion(r);}
+        Node(const Node&r)= default;
+        Node&operator=(const Node&)= default;
         Node(AST_TYPE k,const std::shared_ptr<Type>&ty, const SourceLoc& sor):kind(k),ty(ty),sourceloc(sor){}
-        ~Node(){clear();}
-        Node&operator=(const Node& t);
-        static Node make_CIL_node(long);
-        static Node make_FD_node(double, const std::string&);
-        static Node make_STR_node(const std::string&, const std::string&);
-        static Node make_LGV_node(const std::string&,int , const std::vector<Token>&, const std::string&);
-        static Node make_BIOP_node(const std::shared_ptr<Node>&, const std::shared_ptr<Node>& );
-        static Node make_RET_node(const std::shared_ptr<Node>&);
-        static Node make_FCFD_node(const std::string&, const std::vector<Token>&,const std::shared_ptr<Type>&, std::shared_ptr<Node>&,const std::vector<Token>&,
-                const std::vector<Token>&, const std::shared_ptr<Node>&);
-        static Node make_DEC_node(const std::shared_ptr<Node>&, const std::vector<Token>&);
-        static Node make_INIT_node(const std::shared_ptr<Node>&,int, const std::shared_ptr<Type>&);
-        static Node make_IFTOP_node(const std::shared_ptr<Node>&, const std::shared_ptr<Node>&, const std::shared_ptr<Node>&);
-        static Node make_STRREF_node(const std::shared_ptr<Node>&, const std::string&, const std::shared_ptr<Type>&);
-        static Node make_COMPO_node(const std::vector<Token>&);
-        static Node make_GOLA_node(const std::string&, const std::string&);
-        static Node make_UNOP_node(const std::shared_ptr<Node>&);
+//        ~Node(){clear();}
+//        static Node make_CIL_node(long);
+//        static Node make_FD_node(double, const std::string&);
+//        static Node make_STR_node(const std::string&, const std::string&);
+//        static Node make_LGV_node(const std::string&,int , const std::vector<Token>&, const std::string&);
+//        static Node make_BIOP_node(const std::shared_ptr<Node>&, const std::shared_ptr<Node>& );
+//        static Node make_RET_node(const std::shared_ptr<Node>&);
+//        static Node make_FCFD_node(const std::string&, const std::vector<Token>&,const std::shared_ptr<Type>&, std::shared_ptr<Node>&,const std::vector<Token>&,
+//                const std::vector<Token>&, const std::shared_ptr<Node>&);
+//        static Node make_DEC_node(const std::shared_ptr<Node>&, const std::vector<Token>&);
+//        static Node make_INIT_node(const std::shared_ptr<Node>&,int, const std::shared_ptr<Type>&);
+//        static Node make_IFTOP_node(const std::shared_ptr<Node>&, const std::shared_ptr<Node>&, const std::shared_ptr<Node>&);
+//        static Node make_STRREF_node(const std::shared_ptr<Node>&, const std::string&, const std::shared_ptr<Type>&);
+//        static Node make_COMPO_node(const std::vector<Token>&);
+//        static Node make_GOLA_node(const std::string&, const std::string&);
+//        static Node make_UNOP_node(const std::shared_ptr<Node>&);
 
 
         long getIval() const;
@@ -361,41 +361,41 @@ namespace DataStruct {
 
 
 //        union {
-            // char int or long
-            long ival;
-            // return 语句
-            std::shared_ptr<Node> retval;
-            // compound 语句
-            std::vector<DataStruct::Token> stmts;
-//            std::shared_ptr<Fd> fd;
-//            std::shared_ptr<Str> str;
-//            std::shared_ptr<LGv> lgv;
-//            std::shared_ptr<Biop> biop;
-//            std::shared_ptr<Node> unop;
-//            std::shared_ptr<Fcfd> fcfd;
-//            std::shared_ptr<Dec> dec;
-//            std::shared_ptr<Init> init;
-//            std::shared_ptr<Iftop> iftop;
-//            std::shared_ptr<Gola> gola;
+//        std::shared_ptr<FD_Node> fd;
+//        std::shared_ptr<STR_Node> str;
+//        std::shared_ptr<LGV_Node> lgv;
+//        std::shared_ptr<BIOP_Node> biop;
+//        std::shared_ptr<FCFD_Node> fcfd;
+//        std::shared_ptr<DEC_Node> dec;
+//        std::shared_ptr<INIT_Node> init;
+//        std::shared_ptr<IFTOP_Node> iftop;
+//        std::shared_ptr<STRREF_Node> strref;
+//        std::shared_ptr<GOLA_Node> gola;
 //            std::shared_ptr<Strref> strref;
-
-        std::shared_ptr<FD_Node> fd;
-        std::shared_ptr<STR_Node> str;
-        std::shared_ptr<LGV_Node> lgv;
-        std::shared_ptr<BIOP_Node> biop;
-        std::shared_ptr<Node> unop;
-        std::shared_ptr<FCFD_Node> fcfd;
-        std::shared_ptr<DEC_Node> dec;
-        std::shared_ptr<INIT_Node> init;
-        std::shared_ptr<IFTOP_Node> iftop;
-        std::shared_ptr<GOLA_Node> gola;
-        std::shared_ptr<STRREF_Node> strref;
+//            std::shared_ptr<Gola> gola;
+//            std::shared_ptr<Iftop> iftop;
+//            std::shared_ptr<Init> init;
+//            std::shared_ptr<Dec> dec;
+//            std::shared_ptr<Fcfd> fcfd;
+//            std::shared_ptr<Node> unop;
+//            std::shared_ptr<Biop> biop;
+//            std::shared_ptr<LGv> lgv;
+//            std::shared_ptr<Str> str;
+//            std::shared_ptr<Fd> fd;
 //        };
+        //uanry操作
+        std::shared_ptr<Node> unop;
+        // compound 语句
+        std::vector<DataStruct::Token> stmts;
         // float or double
         struct {
             double fval;
             std::string flabel;
         };
+        // char int or long
+        long ival;
+        // return 语句
+        std::shared_ptr<Node> retval;
         // string
         struct {
             std::string sval;
@@ -406,7 +406,7 @@ namespace DataStruct {
             std::string varname;
             // local
             int loff;
-            std::vector<DataStruct::Token> lvarinit;
+            std::vector<DataStruct::Node> lvarinit;
             // global
             std::string glabel;
         };
@@ -424,14 +424,14 @@ namespace DataStruct {
             // Function pointer or function designator
             std::shared_ptr<Node> fptr;
             // Function declaration
-            std::vector<Type> params;
+            std::vector<Node> params;
             std::vector<Type> localvars;
             std::shared_ptr<Node> body;
         };
         // 声明
         struct {
             std::shared_ptr<Node> declvar;
-            std::vector<Token> declinit;
+            std::vector<Node> declinit;
         };
         // 初始化
         struct {
@@ -461,8 +461,8 @@ namespace DataStruct {
         std::shared_ptr<Type> ty;
         SourceLoc sourceloc;
         NODETYPE tok;
-        Node& copyUnion(const Node& r);
-        void clear();
+//        Node& copyUnion(const Node& r);
+//        void clear();
     };
 }
 #endif //YCC_TOKEN_H

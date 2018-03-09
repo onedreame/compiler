@@ -11,6 +11,7 @@
 #include "../include/buffer.h"
 #include "../include/error.h"
 #include "../include/Lex.h"
+#include "../include/utils.h"
 
 namespace Utils{
     std::string infile;
@@ -288,20 +289,19 @@ namespace Utils{
         return do_ty2s(std::unordered_map<std::shared_ptr<DataStruct::Type>,bool>(),ty);
     }
 
-    void uop_to_string(std::string &b, std::string &op, const std::shared_ptr<DataStruct::Node> &node) {
+    void uop_to_string(std::string &b, std::string &&op, const std::shared_ptr<DataStruct::Node> &node) {
         buf_printf(b, "(%s %s)", op, node2s(node->unop));
     }
 
-    void binop_to_string(std::string &b, std::string &op, const std::shared_ptr<DataStruct::Node> &node) {
+    void binop_to_string(std::string &b, std::string &&op, const std::shared_ptr<DataStruct::Node> &node) {
         buf_printf(b, "(%s %s %s)", op, node2s(node->left), node2s(node->right));
     }
 
-    void a2s_declinit(Buffer *b, Vector *initlist) {
-        for (int i = 0; i < vec_len(initlist); i++) {
+    void a2s_declinit(std::string &b, const std::vector<DataStruct::Node> &initlist) {
+        for (int i = 0; i < initlist.size(); i++) {
             if (i > 0)
-                buf_printf(b, " ");
-            Node *init = vec_get(initlist, i);
-            buf_printf(b, "%s", node2s(init));
+                b+= " ";
+            b+=node2s(std::make_shared<DataStruct::Node>(initlist[i]));
         }
     }
 
@@ -345,138 +345,137 @@ namespace Utils{
                 break;
             case DataStruct::AST_TYPE::AST_LVAR:
                 buf_printf(b, "lv=%s", node->varname);
-                if (node->lvarinit) {
-                    buf_printf(b, "(");
+                if (!node->lvarinit.empty()) {
+                    b+= "(";
                     a2s_declinit(b, node->lvarinit);
-                    buf_printf(b, ")");
+                    b+= ")";
                 }
                 break;
-            case AST_GVAR:
+            case DataStruct::AST_TYPE::AST_GVAR:
                 buf_printf(b, "gv=%s", node->varname);
                 break;
-            case AST_FUNCALL:
-            case AST_FUNCPTR_CALL: {
-                buf_printf(b, "(%s)%s(", ty2s(node->ty),
-                           node->kind == AST_FUNCALL ? node->fname : node2s(node));
-                for (int i = 0; i < vec_len(node->args); i++) {
+            case DataStruct::AST_TYPE::AST_FUNCALL:
+            case DataStruct::AST_TYPE::AST_FUNCPTR_CALL: {
+                buf_printf(b, "(%s)%s(", ty2s(node->getTy()),
+                           node->getKind() == DataStruct::AST_TYPE::AST_FUNCALL ? node->fname : node2s(node));
+                for (int i = 0; i < node->args.size(); i++) {
                     if (i > 0)
-                        buf_printf(b, ",");
-                    buf_printf(b, "%s", node2s(vec_get(node->args, i)));
+                        b+= ",";
+                    b+= node2s(std::make_shared<DataStruct::Node>(node->args[i]));
                 }
-                buf_printf(b, ")");
+                b+= ")";
                 break;
             }
-            case AST_FUNCDESG: {
+            case DataStruct::AST_TYPE::AST_FUNCDESG: {
                 buf_printf(b, "(funcdesg %s)", node->fname);
                 break;
             }
-            case AST_FUNC: {
-                buf_printf(b, "(%s)%s(", ty2s(node->ty), node->fname);
-                for (int i = 0; i < vec_len(node->params); i++) {
+            case DataStruct::AST_TYPE::AST_FUNC: {
+                buf_printf(b, "(%s)%s(", ty2s(node->getTy()), node->fname);
+                for (int i = 0; i < node->params.size(); i++) {
                     if (i > 0)
-                        buf_printf(b, ",");
-                    Node *param = vec_get(node->params, i);
-                    buf_printf(b, "%s %s", ty2s(param->ty), node2s(param));
+                        b+= ",";
+                    buf_printf(b, "%s %s", ty2s(node->params[i].getTy()), node2s(std::make_shared<DataStruct::Node>(node->params[i])));
                 }
-                buf_printf(b, ")");
+                b+= ")";
                 do_node2s(b, node->body);
                 break;
             }
-            case AST_GOTO:
+            case DataStruct::AST_TYPE::AST_GOTO:
                 buf_printf(b, "goto(%s)", node->label);
                 break;
-            case AST_DECL:
+            case DataStruct::AST_TYPE::AST_DECL:
                 buf_printf(b, "(decl %s %s",
-                           ty2s(node->declvar->ty),
+                           ty2s(node->declvar->getTy()),
                            node->declvar->varname);
-                if (node->declinit) {
-                    buf_printf(b, " ");
+                if (!node->declinit.empty()) {
+                    b+= " ";
                     a2s_declinit(b, node->declinit);
                 }
-                buf_printf(b, ")");
+                b+= ")";
                 break;
-            case AST_INIT:
+            case DataStruct::AST_TYPE::AST_INIT:
                 buf_printf(b, "%s@%d", node2s(node->initval), node->initoff, ty2s(node->totype));
                 break;
-            case AST_CONV:
-                buf_printf(b, "(conv %s=>%s)", node2s(node->operand), ty2s(node->ty));
+            case DataStruct::AST_TYPE::AST_CONV:
+                buf_printf(b, "(conv %s=>%s)", node2s(node->unop), ty2s(node->getTy()));
                 break;
-            case AST_IF:
+            case DataStruct::AST_TYPE::AST_IF:
                 buf_printf(b, "(if %s %s",
                            node2s(node->cond),
                            node2s(node->then));
                 if (node->els)
-                    buf_printf(b, " %s", node2s(node->els));
-                buf_printf(b, ")");
+                    b+= node2s(node->els);
+                b+= ")";
                 break;
-            case AST_TERNARY:
+            case DataStruct::AST_TYPE::AST_TERNARY:
                 buf_printf(b, "(? %s %s %s)",
                            node2s(node->cond),
                            node2s(node->then),
                            node2s(node->els));
                 break;
-            case AST_RETURN:
+            case DataStruct::AST_TYPE::AST_RETURN:
                 buf_printf(b, "(return %s)", node2s(node->retval));
                 break;
-            case AST_COMPOUND_STMT: {
-                buf_printf(b, "{");
-                for (int i = 0; i < vec_len(node->stmts); i++) {
-                    do_node2s(b, vec_get(node->stmts, i));
-                    buf_printf(b, ";");
+            case DataStruct::AST_TYPE::AST_COMPOUND_STMT: {
+                b+= "{";
+                for(auto &e:node->stmts){
+                    do_node2s(b, std::make_shared<DataStruct::Node>(e));
+                    b+= ";";
                 }
-                buf_printf(b, "}");
+                b+= "}";
                 break;
             }
-            case AST_STRUCT_REF:
+            case DataStruct::AST_TYPE::AST_STRUCT_REF:
                 do_node2s(b, node->struc);
-                buf_printf(b, ".");
-                buf_printf(b, node->field);
+                b+= ".";
+                b+= node->field;
                 break;
-            case AST_ADDR:  uop_to_string(b, "addr", node); break;
-            case AST_DEREF: uop_to_string(b, "deref", node); break;
-            case OP_SAL:  binop_to_string(b, "<<", node); break;
-            case OP_SAR:
-            case OP_SHR:  binop_to_string(b, ">>", node); break;
-            case OP_GE:  binop_to_string(b, ">=", node); break;
-            case OP_LE:  binop_to_string(b, "<=", node); break;
-            case OP_NE:  binop_to_string(b, "!=", node); break;
-            case OP_PRE_INC: uop_to_string(b, "pre++", node); break;
-            case OP_PRE_DEC: uop_to_string(b, "pre--", node); break;
-            case OP_POST_INC: uop_to_string(b, "post++", node); break;
-            case OP_POST_DEC: uop_to_string(b, "post--", node); break;
-            case OP_LOGAND: binop_to_string(b, "and", node); break;
-            case OP_LOGOR:  binop_to_string(b, "or", node); break;
-            case OP_A_ADD:  binop_to_string(b, "+=", node); break;
-            case OP_A_SUB:  binop_to_string(b, "-=", node); break;
-            case OP_A_MUL:  binop_to_string(b, "*=", node); break;
-            case OP_A_DIV:  binop_to_string(b, "/=", node); break;
-            case OP_A_MOD:  binop_to_string(b, "%=", node); break;
-            case OP_A_AND:  binop_to_string(b, "&=", node); break;
-            case OP_A_OR:   binop_to_string(b, "|=", node); break;
-            case OP_A_XOR:  binop_to_string(b, "^=", node); break;
-            case OP_A_SAL:  binop_to_string(b, "<<=", node); break;
-            case OP_A_SAR:
-            case OP_A_SHR:  binop_to_string(b, ">>=", node); break;
-            case '!': uop_to_string(b, "!", node); break;
-            case '&': binop_to_string(b, "&", node); break;
-            case '|': binop_to_string(b, "|", node); break;
-            case OP_CAST: {
+            case DataStruct::AST_TYPE::AST_ADDR:  uop_to_string(b, "addr", node); break;
+            case DataStruct::AST_TYPE::AST_DEREF: uop_to_string(b, "deref", node); break;
+            case DataStruct::AST_TYPE::OP_SAL:  binop_to_string(b, "<<", node); break;
+            case DataStruct::AST_TYPE::OP_SAR:
+            case DataStruct::AST_TYPE::OP_SHR:  binop_to_string(b, ">>", node); break;
+            case DataStruct::AST_TYPE::OP_GE:  binop_to_string(b, ">=", node); break;
+            case DataStruct::AST_TYPE::OP_LE:  binop_to_string(b, "<=", node); break;
+            case DataStruct::AST_TYPE::OP_NE:  binop_to_string(b, "!=", node); break;
+            case DataStruct::AST_TYPE::OP_PRE_INC: uop_to_string(b, "pre++", node); break;
+            case DataStruct::AST_TYPE::OP_PRE_DEC: uop_to_string(b, "pre--", node); break;
+            case DataStruct::AST_TYPE::OP_POST_INC: uop_to_string(b, "post++", node); break;
+            case DataStruct::AST_TYPE::OP_POST_DEC: uop_to_string(b, "post--", node); break;
+            case DataStruct::AST_TYPE::OP_LOGAND: binop_to_string(b, "and", node); break;
+            case DataStruct::AST_TYPE::OP_LOGOR:  binop_to_string(b, "or", node); break;
+            case DataStruct::AST_TYPE::OP_A_ADD:  binop_to_string(b, "+=", node); break;
+            case DataStruct::AST_TYPE::OP_A_SUB:  binop_to_string(b, "-=", node); break;
+            case DataStruct::AST_TYPE::OP_A_MUL:  binop_to_string(b, "*=", node); break;
+            case DataStruct::AST_TYPE::OP_A_DIV:  binop_to_string(b, "/=", node); break;
+            case DataStruct::AST_TYPE::OP_A_MOD:  binop_to_string(b, "%=", node); break;
+            case DataStruct::AST_TYPE::OP_A_AND:  binop_to_string(b, "&=", node); break;
+            case DataStruct::AST_TYPE::OP_A_OR:   binop_to_string(b, "|=", node); break;
+            case DataStruct::AST_TYPE::OP_A_XOR:  binop_to_string(b, "^=", node); break;
+            case DataStruct::AST_TYPE::OP_A_SAL:  binop_to_string(b, "<<=", node); break;
+            case DataStruct::AST_TYPE::OP_A_SAR:
+            case DataStruct::AST_TYPE::OP_A_SHR:  binop_to_string(b, ">>=", node); break;
+            case DataStruct::AST_TYPE::EXCLAMATION: uop_to_string(b, "!", node); break;
+            case DataStruct::AST_TYPE::AND: binop_to_string(b, "&", node); break;
+            case DataStruct::AST_TYPE::OR: binop_to_string(b, "|", node); break;
+            case DataStruct::AST_TYPE::OP_CAST: {
                 buf_printf(b, "((%s)=>(%s) %s)",
-                           ty2s(node->operand->ty),
-                           ty2s(node->ty),
-                           node2s(node->operand));
+                           ty2s(node->unop->getTy()),
+                           ty2s(node->getTy()),
+                           node2s(node->unop));
                 break;
             }
-            case OP_LABEL_ADDR:
+            case DataStruct::AST_TYPE::OP_LABEL_ADDR:
                 buf_printf(b, "&&%s", node->label);
                 break;
             default: {
-                char *left = node2s(node->left);
-                char *right = node2s(node->right);
-                if (node->kind == OP_EQ)
-                    buf_printf(b, "(== ");
+                auto left = node2s(node->left);
+                auto right = node2s(node->right);
+                if (node->getKind() == DataStruct::AST_TYPE::OP_EQ)
+                    b+= "(== ";
                 else
-                    buf_printf(b, "(%c ", node->kind);
+                    buf_printf(b, "(%c ", static_cast<char >(node->getKind()));
                 buf_printf(b, "%s %s)", left, right);
             }
         }

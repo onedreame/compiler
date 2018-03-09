@@ -116,8 +116,7 @@ namespace DataStruct
         KIND_PTR,
         KIND_STRUCT,
         KIND_FUNC,
-        // used only in parser
-                KIND_STUB,
+        // 占位符
         KIND_PLACEHOLDER,
     };
     enum class QUALITIFIER{

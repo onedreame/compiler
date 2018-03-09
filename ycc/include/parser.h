@@ -101,10 +101,10 @@ private:
     std::shared_ptr<DataStruct::Node> ast_funcptr_call(std::shared_ptr<DataStruct::Node>&, const std::vector<DataStruct::Type> &);
     std::shared_ptr<DataStruct::Node>  ast_func(const std::shared_ptr<DataStruct::Type> &,
                                                 const std::string &,
-                                                const std::vector<DataStruct::Type>&,
+                                                const std::vector<DataStruct::Node>&,
                                                 const std::shared_ptr<DataStruct::Node> &,
                                                 const std::vector<DataStruct::Type> &);
-    std::shared_ptr<DataStruct::Node> Parser::ast_decl(const std::shared_ptr<DataStruct::Node> &, const std::vector<DataStruct::Type> &);
+    std::shared_ptr<DataStruct::Node> ast_decl(const std::shared_ptr<DataStruct::Node> &, const std::vector<DataStruct::Type> &);
     std::shared_ptr<DataStruct::Node> ast_init(const std::shared_ptr<DataStruct::Node> &, const std::shared_ptr<DataStruct::Type> &, int );
     std::shared_ptr<DataStruct::Node> ast_conv(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
     std::shared_ptr<DataStruct::Node> ast_uop(DataStruct::AST_TYPE, const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
@@ -133,30 +133,33 @@ private:
     bool is_inttype(const std::shared_ptr<DataStruct::Type>&);
     bool is_flotype(const std::shared_ptr<DataStruct::Type>&);
     bool is_arithtype(const std::shared_ptr<DataStruct::Type>&);
-    bool is_string(const std::shared_ptr<DataStruct::Type>&);
-    void ensure_assignable(Type *totype, Type *fromtype);
-    void ensure_lvalue(const std::shared_ptr<DataStruct::Node> &);
-    bool is_same_struct(Type *a, Type *b);
-    bool same_arith_type(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Type> &);
-    bool valid_pointer_binop(DataStruct::AST_TYPE );
-    DataStruct::SourceLoc& mark_location();
     bool is_type(const DataStruct::Token&);
-    bool type_compatible(Type *a, Type *b);
-
+    bool is_string(const std::shared_ptr<DataStruct::Type>&);
+    void ensure_lvalue(const std::shared_ptr<DataStruct::Node> &);
+    void ensure_inttype(const std::shared_ptr<DataStruct::Node> &);
+    void ensure_arithtype(const std::shared_ptr<DataStruct::Node> &);
+    void ensure_not_void(std::shared_ptr<DataStruct::Type>&);
+    DataStruct::SourceLoc& mark_location();
     void skip_parentheses(std::vector<DataStruct::Token>&);
+
     std::shared_ptr<DataStruct::Node> conv(const std::shared_ptr<DataStruct::Node> &);
+    bool same_arith_type(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Type> &);
     std::shared_ptr<DataStruct::Node> wrap(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
+    bool valid_pointer_binop(DataStruct::AST_TYPE );
+    std::shared_ptr<DataStruct::Node> binop(DataStruct::AST_TYPE , const std::shared_ptr<DataStruct::Node> &, const std::shared_ptr<DataStruct::Node> &);
+    bool is_same_struct(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Type> &);
+    void ensure_assignable(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Type> &);
     std::shared_ptr<DataStruct::Type> usual_arith_conv(std::shared_ptr<DataStruct::Type>, std::shared_ptr<DataStruct::Type>);
-    Node *binop(int op, Node *lhs, Node *rhs);
+
     std::shared_ptr<DataStruct::Type> read_int_suffix(const std::string &);
     std::shared_ptr<DataStruct::Node> read_int(const DataStruct::Token &);
     std::shared_ptr<DataStruct::Node> read_float(const DataStruct::Token &);
-
     std::shared_ptr<DataStruct::Node> read_number(const DataStruct::Token &);
     int eval_intexpr(const std::shared_ptr<DataStruct::Node> &, const std::shared_ptr<DataStruct::Node> *);
     int eval_struct_ref(const std::shared_ptr<DataStruct::Node> &, int);
 
-    std::shared_ptr<DataStruct::Node> ast_conv(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
+    //_Generic
+    bool type_compatible(const std::shared_ptr<DataStruct::Type> &a, const std::shared_ptr<DataStruct::Type> &b);
     std::shared_ptr<DataStruct::Node> read_generic();
     Vector *read_generic_list(Node **defaultexpr);
 
@@ -171,7 +174,7 @@ private:
     int get_compound_assign_op(const DataStruct::Token &);
     std::shared_ptr<DataStruct::Node> read_stmt_expr();
     std::shared_ptr<DataStruct::Node> read_primary_expr();
-    std::shared_ptr<DataStruct::Node>  read_subscript_expr(const std::shared_ptr<DataStruct::Node> &);
+    std::shared_ptr<DataStruct::Node> read_subscript_expr(const std::shared_ptr<DataStruct::Node> &);
     std::shared_ptr<DataStruct::Node> read_postfix_expr_tail(const std::shared_ptr<DataStruct::Node> &);
     std::shared_ptr<DataStruct::Node> read_postfix_expr();
     std::shared_ptr<DataStruct::Node> read_unary_incdec(int);
@@ -222,7 +225,6 @@ private:
     void read_static_local_var(const std::shared_ptr<DataStruct::Type>&, const std::string&);
     std::shared_ptr<DataStruct::Type> read_declarator(std::string*,const std::shared_ptr<DataStruct::Type>&,std::vector<DataStruct::Node>*,DataStruct::DECL_TYPE);
     std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>> read_rectype_fields(int &,int &,bool);
-    void ensure_not_void(std::shared_ptr<DataStruct::Type>&);
     int read_alignas();
     bool is_poweroftwo(int);
     std::shared_ptr<DataStruct::Type> read_cast_type();
@@ -236,5 +238,7 @@ private:
     std::shared_ptr<DataStruct::Type> read_declarator_array(const std::shared_ptr<DataStruct::Type> &);
     void skip_type_qualifiers();
 
+    //Initializers
+    std::vector<DataStruct::Type> read_decl_init(const std::shared_ptr<DataStruct::Type> &ty);
 };
 #endif //YCC_PARSER_H
