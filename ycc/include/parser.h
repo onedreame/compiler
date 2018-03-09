@@ -14,6 +14,14 @@ public:
         int beg;   //开始行号
         int end;   //结束行号
         std::string label;   //label name
+        Case(Case&&c):beg(c.beg),end(c.end),label(std::move(c.label)){}
+        Case()= default;
+        Case(int a,int b,const std::string &s):beg(a),end(b),label(s){}
+        Case(const Case&)= default;
+        Case& operator=(const Case&)= default;
+        Case&operator=(Case&&c){
+            beg=c.beg;end=c.end;label=std::move(c.label);
+        }
     };
     explicit Parser(){}
     bool is_funcdef();
@@ -21,7 +29,7 @@ public:
         return localenv?localenv:globalenv;
     };
     std::shared_ptr<std::vector<DataStruct::Node>>& read_toplevels();
-    DataStruct::Token read_funcdef();
+    DataStruct::Node read_funcdef();
 private:
     MacroPreprocessor* macro= nullptr;
     Lex *lex= nullptr;
@@ -32,13 +40,13 @@ private:
     std::unordered_map<std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>,
             std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>> scope;
     std::unordered_map<std::string,std::shared_ptr<DataStruct::Type>> tags;         //struct/union/enum
-    std::unordered_map<std::string,DataStruct::Token> labels;       //goto label
+    std::unordered_map<std::string,std::shared_ptr<DataStruct::Token>> labels;       //goto label
 
     std::shared_ptr<std::vector<DataStruct::Node>> toplevels=std::make_shared<std::vector<DataStruct::Node>>();
     std::shared_ptr<std::vector<DataStruct::Node>> localvars= nullptr;
-    std::vector<DataStruct::Token> gotos;
-    std::vector<DataStruct::Token> cases;
-    DataStruct::Type current_func_type;
+    std::vector<std::shared_ptr<DataStruct::Node>> gotos;
+    std::vector<Case> cases;
+    std::shared_ptr<DataStruct::Type> current_func_type;
 
     std::string defaultcase;
     std::string lbreak;
@@ -103,8 +111,8 @@ private:
                                                 const std::string &,
                                                 const std::vector<DataStruct::Node>&,
                                                 const std::shared_ptr<DataStruct::Node> &,
-                                                const std::vector<DataStruct::Type> &);
-    std::shared_ptr<DataStruct::Node> ast_decl(const std::shared_ptr<DataStruct::Node> &, const std::vector<DataStruct::Type> &);
+                                                const std::vector<DataStruct::Node> &);
+    std::shared_ptr<DataStruct::Node> ast_decl(const std::shared_ptr<DataStruct::Node> &, const std::vector<std::shared_ptr<DataStruct::Node>> &);
     std::shared_ptr<DataStruct::Node> ast_init(const std::shared_ptr<DataStruct::Node> &, const std::shared_ptr<DataStruct::Type> &, int );
     std::shared_ptr<DataStruct::Node> ast_conv(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
     std::shared_ptr<DataStruct::Node> ast_uop(DataStruct::AST_TYPE, const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Node> &);
@@ -119,7 +127,7 @@ private:
                                                   const std::shared_ptr<DataStruct::Node> &,
                                                   const std::shared_ptr<DataStruct::Node> &);
     std::shared_ptr<DataStruct::Node> ast_return(const std::shared_ptr<DataStruct::Node> &);
-    std::shared_ptr<DataStruct::Node> ast_compound_stmt(const std::vector<int> *stmts);
+    std::shared_ptr<DataStruct::Node> ast_compound_stmt(const std::vector<std::shared_ptr<DataStruct::Node>>*stmts);
     std::shared_ptr<DataStruct::Node> ast_struct_ref(const std::shared_ptr<DataStruct::Type> &,
                                                      const std::shared_ptr<DataStruct::Node> &,
                                                      const std::string &);
@@ -140,7 +148,6 @@ private:
     void ensure_arithtype(const std::shared_ptr<DataStruct::Node> &);
     void ensure_not_void(std::shared_ptr<DataStruct::Type>&);
     DataStruct::SourceLoc& mark_location();
-    void skip_parentheses(std::vector<DataStruct::Token>&);
 
     std::shared_ptr<DataStruct::Node> conv(const std::shared_ptr<DataStruct::Node> &);
     bool same_arith_type(const std::shared_ptr<DataStruct::Type> &, const std::shared_ptr<DataStruct::Type> &);
@@ -228,8 +235,12 @@ private:
     int read_alignas();
     bool is_poweroftwo(int);
     std::shared_ptr<DataStruct::Type> read_cast_type();
+    void skip_parentheses(std::vector<DataStruct::Token>&);
+    std::shared_ptr<DataStruct::Node> read_func_body(const std::shared_ptr<DataStruct::Type>&functype, const std::string &name, std::vector<DataStruct::Node> &params);
     std::vector<DataStruct::Node> read_oldstyle_param_args();
     void read_oldstyle_param_type(std::vector<DataStruct::Node> *);
+    std::vector<std::shared_ptr<DataStruct::Type>> param_types(std::vector<DataStruct::Node> *params);
+    void update_oldstyle_param_type(std::vector<DataStruct::Node>  *params, std::vector<DataStruct::Node> &declvars);
     std::shared_ptr<DataStruct::Type> read_func_param_list(std::vector<DataStruct::Node>*, const std::shared_ptr<DataStruct::Type>&);
     std::shared_ptr<DataStruct::Type> read_declarator_tail(const std::shared_ptr<DataStruct::Type>&, std::vector<DataStruct::Node>*);
     void read_declarator_params(std::vector<DataStruct::Type>&, std::vector<DataStruct::Node>*, bool &);
@@ -239,6 +250,46 @@ private:
     void skip_type_qualifiers();
 
     //Initializers
-    std::vector<DataStruct::Type> read_decl_init(const std::shared_ptr<DataStruct::Type> &ty);
+    void assign_string(std::vector<std::shared_ptr<DataStruct::Node>>& ,
+                       const std::shared_ptr<DataStruct::Type> &, const std::string &, int );
+    bool maybe_read_brace();
+    void maybe_skip_comma();
+    void skip_to_brace();
+    void sort_inits(std::vector<std::shared_ptr<DataStruct::Node>>&);
+    void read_initializer_elem(std::vector<std::shared_ptr<DataStruct::Node>>&,
+                               const std::shared_ptr<DataStruct::Type> &, int, bool);
+    void read_array_initializer(std::vector<std::shared_ptr<DataStruct::Node>>&,
+                                const std::shared_ptr<DataStruct::Type> &, int, bool);
+    void read_array_initializer_sub(std::vector<std::shared_ptr<DataStruct::Node>>&,
+                                    const std::shared_ptr<DataStruct::Type> &, int , bool);
+    void read_struct_initializer(std::vector<std::shared_ptr<DataStruct::Node>>&,
+                                const std::shared_ptr<DataStruct::Type> &, int, bool);
+    void read_struct_initializer_sub(std::vector<std::shared_ptr<DataStruct::Node>>&,
+                                     const std::shared_ptr<DataStruct::Type> &, int, bool);
+    std::vector<std::shared_ptr<DataStruct::Node>> read_decl_init(const std::shared_ptr<DataStruct::Type> &ty);
+    void read_initializer_list(std::vector<std::shared_ptr<DataStruct::Node>>&,
+                               const std::shared_ptr<DataStruct::Type> &, int , bool);
+
+    //Statements and Blocks
+    std::shared_ptr<DataStruct::Node> read_boolean_expr();
+    std::shared_ptr<DataStruct::Node> read_if_stmt();
+    std::shared_ptr<DataStruct::Node> read_opt_decl_or_stmt();
+    std::shared_ptr<DataStruct::Node> read_for_stmt();
+    std::shared_ptr<DataStruct::Node> read_compound_stmt();
+    void read_decl_or_stmt(std::vector<DataStruct::Node> &list);
+    std::shared_ptr<DataStruct::Node> read_stmt();
+    std::shared_ptr<DataStruct::Node> read_label(const DataStruct::Token &tok);
+    std::shared_ptr<DataStruct::Node> read_label_tail(const std::shared_ptr<DataStruct::Node> &label);
+    std::shared_ptr<DataStruct::Node> read_case_label(const DataStruct::Token &tok);
+    void check_case_duplicates();
+    std::shared_ptr<DataStruct::Node> read_default_label(const DataStruct::Token &tok);
+    std::shared_ptr<DataStruct::Node> read_while_stmt();
+    std::shared_ptr<DataStruct::Node> read_do_stmt();
+    std::shared_ptr<DataStruct::Node> make_switch_jump(const std::shared_ptr<DataStruct::Node> &var, const Case &c);
+    std::shared_ptr<DataStruct::Node> read_switch_stmt();
+    std::shared_ptr<DataStruct::Node> read_break_stmt(const DataStruct::Token &tok);
+    std::shared_ptr<DataStruct::Node> read_continue_stmt(const DataStruct::Token &tok);
+    std::shared_ptr<DataStruct::Node> read_return_stmt();
+    std::shared_ptr<DataStruct::Node> read_goto_stmt();
 };
 #endif //YCC_PARSER_H

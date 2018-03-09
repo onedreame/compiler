@@ -58,8 +58,8 @@ namespace DataStruct {
         int bitoff;
         int bitsize;
         std::shared_ptr<Type> rettype;   //函数返回类型
-        std::vector<Type> params;        //函数参数
-        bool hasva;
+        std::vector<std::shared_ptr<Type>> params;        //函数参数
+        bool hasva;                      //是否有参数
         //http://en.cppreference.com/w/c/language/function_declaration
         bool oldstyle;
     };
@@ -386,7 +386,7 @@ namespace DataStruct {
         //uanry操作
         std::shared_ptr<Node> unop;
         // compound 语句
-        std::vector<DataStruct::Token> stmts;
+        std::vector<std::shared_ptr<DataStruct::Node>> stmts;
         // float or double
         struct {
             double fval;
@@ -425,13 +425,13 @@ namespace DataStruct {
             std::shared_ptr<Node> fptr;
             // Function declaration
             std::vector<Node> params;
-            std::vector<Type> localvars;
+            std::vector<Node> localvars;
             std::shared_ptr<Node> body;
         };
         // 声明
         struct {
             std::shared_ptr<Node> declvar;
-            std::vector<Node> declinit;
+            std::vector<std::shared_ptr<Node>> declinit;
         };
         // 初始化
         struct {
