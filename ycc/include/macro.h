@@ -10,25 +10,65 @@
 #include <algorithm>
 #include "Lex.h"
 #include "utils.h"
+class Parser;
 
 //using SpecialMacroHandler=void(*)(MacroPreprocessor* ,const DataStruct::Token&);
 class MacroPreprocessor{
 public:
     typedef void (*SpecialMacroHandler)(MacroPreprocessor* ,const DataStruct::Token&);
+    DataStruct::Token peek_token();
+    DataStruct::Token read_token();
+    void expect(DataStruct::AST_TYPE);
+    bool next(DataStruct::AST_TYPE );
+    static std::shared_ptr<MacroPreprocessor> Instance();
+    friend void handle_date_macro(MacroPreprocessor*,const DataStruct::Token &);
+    friend void handle_time_macro(MacroPreprocessor*,const DataStruct::Token &);
+    friend void handle_timestamp_macro(MacroPreprocessor*,const DataStruct::Token &);
+    friend void handle_file_macro(MacroPreprocessor*,const DataStruct::Token &);
+    friend void handle_line_macro(MacroPreprocessor*,const DataStruct::Token &);
+    friend void handle_pragma_macro(MacroPreprocessor*,const DataStruct::Token &);
+    friend void handle_base_file_macro(MacroPreprocessor*,const DataStruct::Token &);
+    friend void handle_counter_macro(MacroPreprocessor*,const DataStruct::Token &);
+
+    friend void handle_include_level_macro(MacroPreprocessor*,const DataStruct::Token &);
+
+//    void handle_date_macro(MacroPreprocessor*const,const DataStruct::Token &);
+//    void handle_time_macro(const DataStruct::Token &);
+//    void handle_timestamp_macro(const DataStruct::Token &);
+//    void handle_file_macro(const DataStruct::Token &);
+//    void handle_line_macro(const DataStruct::Token &);
+//    void handle_pragma_macro(const DataStruct::Token &);
+//    void handle_base_file_macro(const DataStruct::Token &);
+//    void handle_counter_macro(const DataStruct::Token &);
+//    void handle_include_level_macro(const DataStruct::Token &);
+    void add_include_path(const std::string &);
+    void cpp_init();
+    void read_from_string(const std::string&);
+    void set_depency(std::shared_ptr<Lex>&lex, std::shared_ptr<Parser>&parser){lex=lex;parser=parser;}
+
+private:
+    std::shared_ptr<Lex> lex= nullptr;
+    std::shared_ptr<Parser> parser= nullptr;
+    std::unordered_map<std::string,DataStruct::Macro> macros;
+    std::unordered_map<std::string,DataStruct::AST_TYPE > keywords;
+    std::vector<DataStruct::CondIncl >cond_incl_stack;
+    //key:文件路径，value：文件的包含哨
+    std::unordered_map<std::string,std::string> include_guard;
+    std::unordered_map<std::string,int> once;
+    const DataStruct::Token CPP_TOKEN_ONE=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,"1");
+    const DataStruct::Token CPP_TOKEN_ZERO=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,"0");
+    std::vector<std::string> std_include_path;
+
+    struct tm now;
+    static std::shared_ptr<MacroPreprocessor> _cpp;
     MacroPreprocessor&operator=( const MacroPreprocessor&)= delete;
     MacroPreprocessor(const MacroPreprocessor&)= delete;
     MacroPreprocessor&operator=(MacroPreprocessor&&)= delete;
     MacroPreprocessor(MacroPreprocessor&&)= delete;
-    MacroPreprocessor(Lex* lex):lex(lex){}
-    MacroPreprocessor(const std::string&infile):lex(new Lex(infile)){}
-    MacroPreprocessor(){if (Utils::infile.empty()) Error::error("未指定输入文件");lex=new Lex(Utils::infile);}
-    ~MacroPreprocessor(){if(lex!= nullptr) delete lex;}
+    MacroPreprocessor(){if (Utils::infile.empty()) Error::error("未指定输入文件");lex=std::make_shared<Lex>(Utils::infile);}
+
     DataStruct::Token read_expand_newline();
     DataStruct::Token read_expand();
-    bool next(DataStruct::AST_TYPE );
-    void expect(DataStruct::AST_TYPE);
-    DataStruct::Token peek_token();
-    DataStruct::Token read_token();
     struct tm getNow(){ return now;}
     void define_obj_macro(const std::string& name, const DataStruct::Token& value);
     void read_directive(const DataStruct::Token& hash);
@@ -70,6 +110,9 @@ public:
     bool try_include(std::string , const std::string& , bool );
 
     DataStruct::Token may_convert_keyword(const DataStruct::Token&);
+    bool read_constexpr();
+    DataStruct::Token read_defined_op();
+    std::vector<DataStruct::Token> read_intexpr_line();
     void read_define();
     void read_linemarker(const DataStruct::Token &);
     void read_elif(const DataStruct::Token &);
@@ -87,44 +130,6 @@ public:
 
     void read_warning(const DataStruct::Token&);
     void make_token_pushback(const DataStruct::Token &, DataStruct::TOKEN_TYPE , const std::string &);
-    friend void handle_date_macro(MacroPreprocessor*,const DataStruct::Token &);
-    friend void handle_time_macro(MacroPreprocessor*,const DataStruct::Token &);
-    friend void handle_timestamp_macro(MacroPreprocessor*,const DataStruct::Token &);
-    friend void handle_file_macro(MacroPreprocessor*,const DataStruct::Token &);
-    friend void handle_line_macro(MacroPreprocessor*,const DataStruct::Token &);
-    friend void handle_pragma_macro(MacroPreprocessor*,const DataStruct::Token &);
-    friend void handle_base_file_macro(MacroPreprocessor*,const DataStruct::Token &);
-    friend void handle_counter_macro(MacroPreprocessor*,const DataStruct::Token &);
-
-    friend void handle_include_level_macro(MacroPreprocessor*,const DataStruct::Token &);
-
-//    void handle_date_macro(MacroPreprocessor*const,const DataStruct::Token &);
-//    void handle_time_macro(const DataStruct::Token &);
-//    void handle_timestamp_macro(const DataStruct::Token &);
-//    void handle_file_macro(const DataStruct::Token &);
-//    void handle_line_macro(const DataStruct::Token &);
-//    void handle_pragma_macro(const DataStruct::Token &);
-//    void handle_base_file_macro(const DataStruct::Token &);
-//    void handle_counter_macro(const DataStruct::Token &);
-//    void handle_include_level_macro(const DataStruct::Token &);
-    void add_include_path(const std::string &);
-    void cpp_init();
-    void read_from_string(const std::string&);
-
-private:
-    Lex* lex= nullptr;
-    std::unordered_map<std::string,DataStruct::Macro> macros;
-    std::list<DataStruct::Token > tokens;
-    std::unordered_map<std::string,DataStruct::AST_TYPE > keywords;
-    std::vector<DataStruct::CondIncl >cond_incl_stack;
-    //key:文件路径，value：文件的包含哨
-    std::unordered_map<std::string,std::string> include_guard;
-    std::unordered_map<std::string,int> once;
-    const DataStruct::Token CPP_TOKEN_ONE=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,"1");
-    const DataStruct::Token CPP_TOKEN_ZERO=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,"0");
-    std::vector<std::string> std_include_path;
-
-    struct tm now;
 
     DataStruct::Macro make_macro(const DataStruct::Macro& tmpl) {
         return DataStruct::Macro(tmpl);

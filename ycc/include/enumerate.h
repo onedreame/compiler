@@ -120,8 +120,8 @@ namespace DataStruct
         KIND_PLACEHOLDER,
     };
     enum class QUALITIFIER{
-        S_PLACEHOLDER=0,
-        S_TYPEDEF = 1,
+        S_PLACEHOLDER,
+        S_TYPEDEF,
         S_EXTERN,
         S_STATIC,
         S_AUTO,
@@ -129,8 +129,7 @@ namespace DataStruct
     };
 
     enum class DECL_TYPE{
-        DECL_PLACEHOLDER=0,
-        DECL_BODY = 1,     //函数体
+        DECL_BODY,     //函数体
         DECL_PARAM,        //参数
         DECL_PARAM_TYPEONLY,    //参数
         DECL_CAST,     //typeof
@@ -152,5 +151,11 @@ namespace DataStruct
         COMPO, //compound 语句
         STRREF,//struct引用
     };
+    //type specifiers
+    enum class Kind{kplaceholder, kvoid = 1, kbool, kchar, kint, kfloat, kdouble };
+    //type size
+    enum class Size{kplaceholder, kshort = 1, klong, kllong };
+    //type sign
+    enum class Sig{kplaceholder, ksigned = 1, kunsigned };
 }
 #endif //YCC_ENUMERATE_H

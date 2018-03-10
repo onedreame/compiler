@@ -46,8 +46,8 @@ int main() {
 ////    Error::warnp(std::string("hello"),"%s,%1,%c\n",1,"yes",'c');
 //    Test::lexTokenTest("../test/");
 //    Test::newLineTest();
-//    Test::macroExpandTest("../test/",1);
-    Test::NodeTest();
+    Test::macroExpandTest("../test/",0);
+//    Test::NodeTest();
     return 0;
 }
 

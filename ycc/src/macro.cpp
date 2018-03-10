@@ -3,10 +3,15 @@
 //
 
 #include <libgen.h>
-#include "../include/macro.h"
-#include "../include/utils.h"
 #include "../include/path.h"
+#include "../include/parser.h"
 
+std::shared_ptr<MacroPreprocessor> MacroPreprocessor::Instance(){
+    if (!_cpp)
+        _cpp.reset(new MacroPreprocessor());
+    return _cpp;
+}
+std::shared_ptr<MacroPreprocessor> MacroPreprocessor::_cpp= nullptr;
 //构建预处理条件
 DataStruct::CondIncl MacroPreprocessor::make_cond_incl(bool wastrue) {
     DataStruct::CondIncl r;
@@ -537,7 +542,18 @@ void MacroPreprocessor::read_linemarker(const DataStruct::Token &tok)
 }
 void MacroPreprocessor::read_elif(const DataStruct::Token &hash)
 {
-
+    if (cond_incl_stack.empty())
+        Error::errort(hash, "stray #elif");
+    auto ci = cond_incl_stack.back();
+    if (ci.ctx == DataStruct::CondInclCtx ::IN_ELSE)
+        Error::errort(hash, "#elif after #else");
+    ci.ctx = DataStruct::CondInclCtx::IN_ELIF;
+    ci.include_guard = "";
+    if (ci.wastrue || !read_constexpr()) {
+        lex->skip_cond_incl();
+        return;
+    }
+    ci.wastrue = true;
 }
 
 //读取else条件，因为只有else才需要和上面的条件编译条件做交互，所以这里的else的wastrue并不需要额外设置
@@ -592,14 +608,52 @@ void MacroPreprocessor::read_error(const DataStruct::Token&hash)
 {
     Error::errort(hash,"#error: %s", read_error_message());
 }
+DataStruct::Token MacroPreprocessor::read_defined_op(){
+    auto tok = lex->lex();
+    if (lex->is_keyword(tok, lex->get_keywords("("))) {
+        tok = lex->lex();
+        expect(lex->get_keywords(")"));
+    }
+    if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
+        Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+    return macros.find(*tok.sval)!=macros.end() ? CPP_TOKEN_ONE : CPP_TOKEN_ZERO;
+}
+std::vector<DataStruct::Token> MacroPreprocessor::read_intexpr_line(){
+    std::vector<DataStruct::Token> r;
+    for (;;) {
+        auto tok = read_expand_newline();
+        if (tok.kind == DataStruct::TOKEN_TYPE::TNEWLINE)
+            return r;
+        if (lex->is_ident(tok, "defined")) {
+            r.emplace_back(read_defined_op());
+        } else if (tok.kind == DataStruct::TOKEN_TYPE::TIDENT) {
+            // C11 6.10.1.4
+            r.push_back(CPP_TOKEN_ZERO);
+        } else {
+            r.push_back(tok);
+        }
+    }
+}
 void MacroPreprocessor::do_read_if(bool istrue) {
     cond_incl_stack.emplace_back(make_cond_incl(istrue));
     if (!istrue)
         lex->skip_cond_incl();
 }
+bool MacroPreprocessor::read_constexpr() {
+    auto val=read_intexpr_line();
+    std::reverse(val.begin(),val.end());
+    lex->token_buffer_stash(val);
+    auto expr = parser->read_expr();
+    auto tok = lex->lex();
+    if (tok.kind != DataStruct::TOKEN_TYPE::TEOF)
+        Error::errort(tok, "stray token: %s", Utils::tok2s(tok));
+    lex->token_buffer_unstash();
+    return parser->eval_intexpr(expr, nullptr);
+}
+
 void MacroPreprocessor::read_if()
 {
-
+    do_read_if(read_constexpr());
 }
 void MacroPreprocessor::read_ifdef()
 {
@@ -895,13 +949,14 @@ void MacroPreprocessor::cpp_init() {
     init_now();
     init_path_and_macros();
 }
+
 //解析一个字符串，适合处理一些宏
 void MacroPreprocessor::read_from_string(const std::string& s){
-//    lex->stream_push(lex->make_file_string(s));
-//    std::vector<DataStruct::Token > toplevels = read_toplevels();
+    lex->stream_push(lex->make_file_string(s));
+    auto toplevels = parser->read_toplevels();
 //    for (auto &e:toplevels)
 //        emit_toplevel(e);
-//    lex->stream_unstash();
+    lex->stream_unstash();
 }
 //特殊宏 __TIME__
 //返回当前时间

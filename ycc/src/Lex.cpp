@@ -4,7 +4,6 @@
 
 #include <sys/stat.h>
 #include "../include/Lex.h"
-#include "../include/error.h"
 #include "../include/encode.h"
 
 //根据文件构建文件结构
@@ -21,7 +20,54 @@ std::shared_ptr<DataStruct::File> Lex::make_file(std::shared_ptr<std::ifstream> 
     fi->mtime=buf.st_mtime;
     return fi;
 }
-
+std::shared_ptr<DataStruct::File > Lex::current_file(){
+    if (files.empty())
+        return nullptr;
+    return files.back();
+}
+DataStruct::AST_TYPE Lex::get_keywords(const std::string&s) const {
+    if (keywords.find(s)!=keywords.end())
+        return keywords.at(s);
+    Error::error("%s is not keyword",s);
+}
+std::string Lex::pos_string(Pos p)
+{
+    return Utils::format("%s:%d:%d",filename.size()?filename:"(unknown)",p.line,p.column);
+}
+void Lex::stream_stash(std::shared_ptr<DataStruct::File> fi){
+    stashed.push_back(files);
+    files.clear();
+    files.push_back(fi);
+}
+void Lex::stream_unstash(){
+    files=stashed.back();
+    stashed.pop_back();
+}
+void Lex::add_file(const std::string& s)
+{
+    fs=std::make_shared<std::ifstream>(s);
+    if (!(*fs)){
+        Error::error("%s does not exits,please check:%s",s,strerror(errno));
+    }
+    buffers.push_back(std::vector<DataStruct::Token>());
+    files.push_back(make_file(fs,s));
+    std::cout<<"fs is open?"<<fs->is_open()<<std::endl;
+}
+void Lex::retreat_token(DataStruct::Token& tok)
+{
+    if (tok.kind==DataStruct::TOKEN_TYPE::TEOF)
+        return;
+    buffers.back().push_back(tok);
+}
+bool Lex::is_keyword(const DataStruct::Token& tok, DataStruct::AST_TYPE c) const {
+    return (tok.kind == DataStruct::TOKEN_TYPE::TKEYWORD) && (tok.id == c);
+}
+std::shared_ptr<Lex> Lex::Instance(){
+    if (!_lex)
+        _lex.reset(new Lex());
+    return _lex;
+}
+std::shared_ptr<Lex> Lex::_lex= nullptr;
 //解析字符串
 std::shared_ptr<DataStruct::File> Lex::make_file_string(const std::string& s)
 {
@@ -404,7 +450,7 @@ DataStruct::Token Lex::read_ident(int c) {
             continue;
         }
         if (r == '\\' && (peek() == 'u' || peek() == 'U')) {
-            write_utf8(ident, read_escaped_char());
+            Utils::write_utf8(ident, read_escaped_char());
             continue;
         }
         retreat(r);

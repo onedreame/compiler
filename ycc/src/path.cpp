@@ -60,7 +60,7 @@ namespace Path
             return clean(path);
         if (cwd[0]=='\0'&&!getcwd(cwd,PATH_MAX))
             Error::errorf(__FILE__":"STR(__LINE__),"","Can not get current work dictory: %s",strerror(errno));
-        return clean(Utils::format("%s/%s",Utils::format(cwd),path));
+        return clean(std::string(cwd)+"/"+path);
     }
 
 }

@@ -12,7 +12,7 @@
 #include <vector>
 #include <fstream>
 #include <memory>
-#include <bits/unordered_map.h>
+#include <unordered_map>
 #include "enumerate.h"
 class MacroPreprocessor;
 namespace DataStruct {
@@ -36,8 +36,8 @@ namespace DataStruct {
     struct Type {
         Type(DataStruct::TYPE_KIND k,int s=0,int a=0,bool ui=false):kind(k),size(s),align(a),usig(ui){}
         Type(DataStruct::TYPE_KIND k,bool is_struct=false):kind(k),is_struct(is_struct){}
-        Type(DataStruct::TYPE_KIND k,int s,int a,std::shared_ptr<Type>& ptr,int len=0):kind(k),size(s),align(a),ptr(ptr),len(len){}
-        Type(DataStruct::Type k,const std::shared_ptr<DataStruct::Type>&ret,const std::vector<DataStruct::Type>& params,bool hasva,
+        Type(DataStruct::TYPE_KIND k,int s,int a,const std::shared_ptr<Type>& ptr,int len=0):kind(k),size(s),align(a),ptr(ptr),len(len){}
+        Type(DataStruct::TYPE_KIND k,const std::shared_ptr<DataStruct::Type>&ret,const std::vector<std::shared_ptr<Type>>& params,bool hasva,
              bool oldstype):kind(k),rettype(ret),params(params),hasva(hasva),oldstyle(oldstype){}
         Type()= default;
         Type(const Type&)= default;
@@ -388,74 +388,54 @@ namespace DataStruct {
         // compound 语句
         std::vector<std::shared_ptr<DataStruct::Node>> stmts;
         // float or double
-        struct {
-            double fval;
-            std::string flabel;
-        };
+        double fval;
+        std::string flabel;
         // char int or long
         long ival;
         // return 语句
         std::shared_ptr<Node> retval;
         // string
-        struct {
-            std::string sval;
-            std::string slabel;
-        };
+        std::string sval;
+        std::string slabel;
         // local/global 变量
-        struct {
-            std::string varname;
-            // local
-            int loff;
-            std::vector<DataStruct::Node> lvarinit;
-            // global
-            std::string glabel;
-        };
+        std::string varname;
+        // local
+        int loff;
+        std::vector<std::shared_ptr<Node>> lvarinit;
+        // global
+        std::string glabel;
         // binary op
-        struct {
-            std::shared_ptr<Node> left;
-            std::shared_ptr<Node> right;
-        };
+        std::shared_ptr<Node> left;
+        std::shared_ptr<Node> right;
         // 函数调用或声明
-        struct {
-            std::string fname;
-            // Function call
-            std::vector<Type> args;
-            std::shared_ptr<Type> ftype;
-            // Function pointer or function designator
-            std::shared_ptr<Node> fptr;
-            // Function declaration
-            std::vector<Node> params;
-            std::vector<Node> localvars;
-            std::shared_ptr<Node> body;
-        };
+        std::string fname;
+        // Function call
+        std::vector<Node> args;
+        std::shared_ptr<Type> ftype;
+        // Function pointer or function designator
+        std::shared_ptr<Node> fptr;
+        // Function declaration
+        std::vector<Node> params;
+        std::vector<Node> localvars;
+        std::shared_ptr<Node> body;
         // 声明
-        struct {
-            std::shared_ptr<Node> declvar;
-            std::vector<std::shared_ptr<Node>> declinit;
-        };
+        std::shared_ptr<Node> declvar;
+        std::vector<std::shared_ptr<Node>> declinit;
         // 初始化
-        struct {
-            std::shared_ptr<Node> initval;
-            int initoff;
-            std::shared_ptr<Type> totype;
-        };
+        std::shared_ptr<Node> initval;
+        int initoff;
+        std::shared_ptr<Type> totype;
         // if语句或ternary op
-        struct {
-            std::shared_ptr<Node> cond;
-            std::shared_ptr<Node> then;
-            std::shared_ptr<Node> els;
-        };
+        std::shared_ptr<Node> cond;
+        std::shared_ptr<Node> then;
+        std::shared_ptr<Node> els;
         // goto label
-        struct {
-            std::string label;
-            std::string newlabel;
-        };
+        std::string label;
+        std::string newlabel;
         // struct引用
-        struct {
-            std::shared_ptr<Node> struc;
-            std::string field;
-            std::shared_ptr<Type> fieldtype;
-        };
+        std::shared_ptr<Node> struc;
+        std::string field;
+        std::shared_ptr<Type> fieldtype;
     private:
         AST_TYPE kind;
         std::shared_ptr<Type> ty;

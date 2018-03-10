@@ -135,29 +135,29 @@ namespace Test{
             std::cout<<std::endl;
             id++;
             if (id<startid) continue;
-            MacroPreprocessor cpp(Path::fullpath(path+s));
-            cpp.cpp_init();
-            DataStruct::Token tok=cpp.read_token();
-            int format=0;
-            while (tok.kind!=DataStruct::TOKEN_TYPE::TEOF)
-            {
-                std::cout<<++format<<":"<<Utils::tok2s(tok)<<" ";
-                if (format%11==0) std::cout<<std::endl;
-                else std::cout<<std::flush;
-                tok=cpp.read_token();
-            }
+//            MacroPreprocessor cpp(Path::fullpath(path+s));
+//            cpp.cpp_init();
+//            DataStruct::Token tok=cpp.read_token();
+//            int format=0;
+//            while (tok.kind!=DataStruct::TOKEN_TYPE::TEOF)
+//            {
+//                std::cout<<++format<<":"<<Utils::tok2s(tok)<<" ";
+//                if (format%11==0) std::cout<<std::endl;
+//                else std::cout<<std::flush;
+//                tok=cpp.read_token();
+//            }
         }
     }
     void NodeTest()
     {
         DataStruct::Node node;
         std::cout<<node.ival<<std::endl;
-        node=DataStruct::Node::make_FD_node(1.2,"hello");
-        std::cout<<node.fd->fval<<std::endl;
-        std::cout<<node.fd->flabel<<std::endl;
-        node=DataStruct::Node::make_GOLA_node("yes","no");
-        std::cout<<node.gola->label<<std::endl;
-        std::cout<<node.gola->newlabel<<std::endl;
-        node=DataStruct::Node::make_UNOP_node(std::make_shared<DataStruct::Node>());
+//        node=DataStruct::Node::make_FD_node(1.2,"hello");
+//        std::cout<<node.fd->fval<<std::endl;
+//        std::cout<<node.fd->flabel<<std::endl;
+//        node=DataStruct::Node::make_GOLA_node("yes","no");
+//        std::cout<<node.gola->label<<std::endl;
+//        std::cout<<node.gola->newlabel<<std::endl;
+//        node=DataStruct::Node::make_UNOP_node(std::make_shared<DataStruct::Node>());
     }
 }

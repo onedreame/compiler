@@ -274,8 +274,8 @@ namespace Utils{
                     for (int i = 0; i < ty->params.size(); i++) {
                         if (i > 0)
                             b+=",";
-                        const DataStruct::Type &t = ty->params[i];
-                        b+=do_ty2s(std::move(dict), std::make_shared<DataStruct::Type>(t));
+                        auto t = ty->params[i];
+                        b+=do_ty2s(std::move(dict), t);
                     }
                 }
                 buf_printf(b, ")=>%s", do_ty2s(std::move(dict), ty->rettype));
@@ -297,11 +297,11 @@ namespace Utils{
         buf_printf(b, "(%s %s %s)", op, node2s(node->left), node2s(node->right));
     }
 
-    void a2s_declinit(std::string &b, const std::vector<DataStruct::Node> &initlist) {
+    void a2s_declinit(std::string &b, const std::vector<std::shared_ptr<DataStruct::Node>> &initlist) {
         for (int i = 0; i < initlist.size(); i++) {
             if (i > 0)
                 b+= " ";
-            b+=node2s(std::make_shared<DataStruct::Node>(initlist[i]));
+            b+=node2s(initlist[i]);
         }
     }
 
@@ -420,7 +420,7 @@ namespace Utils{
             case DataStruct::AST_TYPE::AST_COMPOUND_STMT: {
                 b+= "{";
                 for(auto &e:node->stmts){
-                    do_node2s(b, std::make_shared<DataStruct::Node>(e));
+                    do_node2s(b, e);
                     b+= ";";
                 }
                 b+= "}";

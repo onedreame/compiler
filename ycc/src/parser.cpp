@@ -4,6 +4,12 @@
 #include "../include/parser.h"
 #include "../include/encode.h"
 
+std::shared_ptr<Parser> Parser::Instance(){
+    if (_parser== nullptr)
+        _parser.reset(new Parser());
+    return _parser;
+}
+std::shared_ptr<Parser> Parser::_parser=nullptr;
 void Parser::CHECK_CPP(){
     if (macro== nullptr) {
         Error::error("MacroPropressor in Parser should be initialized.");
@@ -56,7 +62,10 @@ std::shared_ptr<DataStruct::Type> Parser::make_numtype(DataStruct::TYPE_KIND kin
     return r;
 }
 std::shared_ptr<DataStruct::Type> Parser::make_func_type(const std::shared_ptr<DataStruct::Type> &rettype, const std::vector<DataStruct::Type> &paramtypes, bool has_varargs, bool oldstyle) {
-    return std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_FUNC,rettype,paramtypes,has_varargs,oldstyle);
+    std::vector<std::shared_ptr<DataStruct::Type>> tmp;
+    tmp.reserve(paramtypes.size());
+    std::transform(paramtypes.begin(),paramtypes.end(),tmp.begin(),[](const DataStruct::Type&e){ return std::make_shared<DataStruct::Type>(e);});
+    return std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_FUNC,rettype,tmp,has_varargs,oldstyle);
 }
 std::shared_ptr<DataStruct::Type> Parser::make_ptr_type(const std::shared_ptr<DataStruct::Type> &ty) {
     return std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_PTR,8,8,ty);
@@ -226,7 +235,7 @@ std::shared_ptr<DataStruct::Node> Parser::ast_static_lvar(const std::shared_ptr<
 //function call: what we want is the return value (if exits) of the call.
 std::shared_ptr<DataStruct::Node> Parser::ast_funcall(const std::shared_ptr<DataStruct::Type> &ftype,
                                               const std::string &fname,
-                                              const std::vector<DataStruct::Type> &args){
+                                              const std::vector<DataStruct::Node> &args){
     auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_FUNCALL,ftype->rettype,sl);
     node->fname=fname;
     node->args=args;
@@ -235,7 +244,7 @@ std::shared_ptr<DataStruct::Node> Parser::ast_funcall(const std::shared_ptr<Data
 }
 //function ptr call: for function ptr,we should first resolve its real type,then the last is the same as funcall.
 std::shared_ptr<DataStruct::Node> Parser::ast_funcptr_call(std::shared_ptr<DataStruct::Node>&fptr,
-                                                   const std::vector<DataStruct::Type> &args) {
+                                                   const std::vector<DataStruct::Node> &args) {
     if (fptr->getTy()->kind!=DataStruct::TYPE_KIND::KIND_PTR)
         Error::error("%s is not a func pointer",Utils::ty2s(fptr->getTy()));
     if (fptr->getTy()->ptr->kind!=DataStruct::TYPE_KIND::KIND_FUNC)
@@ -419,7 +428,7 @@ bool Parser::is_type(const DataStruct::Token&tok){
         return false;
     switch (tok.id) {
 #define op(x, y)
-#define keyword(id, _, istype) case DataStruct::TOKENTYPE::id: return istype;
+#define keyword(id, _, istype) case DataStruct::AST_TYPE::id: return istype;
 #include "../include/keyword.inc"
 #undef keyword
 #undef op
@@ -440,7 +449,7 @@ int Parser::eval_struct_ref(const std::shared_ptr<DataStruct::Node> &node, int o
         return eval_struct_ref(node->struc, node->getTy()->offset + offset);
     return eval_intexpr(node, nullptr) + offset;
 }
-int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, const std::shared_ptr<DataStruct::Node> *addr) {
+int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, std::shared_ptr<DataStruct::Node> *addr) {
     switch (node->getKind()) {
         case DataStruct::AST_TYPE::AST_LITERAL:
             if (is_inttype(node->getTy()))
@@ -456,7 +465,7 @@ int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, const st
             // fallthrough
         case DataStruct::AST_TYPE::AST_GVAR:
             if (addr) {
-                addr = conv(node);
+                *addr = conv(node);
                 return 0;
             }
             goto error;
@@ -603,7 +612,7 @@ std::vector<std::shared_ptr<DataStruct::Type>> Parser::param_types(std::vector<D
 }
 
 //读取声明和函数定义
-std::shared_ptr<std::vector<DataStruct::Node>>& Parser::read_toplevels()
+std::shared_ptr<std::vector<DataStruct::Node>> Parser::read_toplevels()
 {
     toplevels->clear();
     CHECK_CPP();
@@ -642,6 +651,20 @@ DataStruct::Node Parser::read_funcdef() {
     backfill_labels();
     localenv = nullptr;
     return *r;
+}
+void Parser::backfill_labels(){
+    for (auto& src:gotos) {
+        auto label = src->label;
+        std::shared_ptr<DataStruct::Node> dst= nullptr;
+        if (labels.find(label)!=labels.end())
+            dst = labels.at(label);
+        if (!dst)
+            Error::error("stray %s: %s", src->getKind() == DataStruct::AST_TYPE::AST_GOTO ? "goto" : "unary &&", label);
+        if (!dst->newlabel.empty())
+            src->newlabel = dst->newlabel;
+        else
+            src->newlabel = dst->newlabel = make_label();
+    }
 }
 std::shared_ptr<DataStruct::Node> Parser::read_func_body(const std::shared_ptr<DataStruct::Type>&functype, const std::string &fname, std::vector<DataStruct::Node> &params){
     decltype(localenv) tmp=std::make_shared<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>();
@@ -725,17 +748,61 @@ std::shared_ptr<DataStruct::Node> Parser::read_generic(){
     auto contexpr = read_assignment_expr();
     macro->expect(lex->get_keywords(","));
     decltype(contexpr) defaultexpr = nullptr;
-    Vector *list = read_generic_list(&defaultexpr);
-    for (int i = 0; i < vec_len(list); i++) {
-        void **pair = vec_get(list, i);
-        Type *ty = pair[0];
-        Node *expr = pair[1];
-        if (type_compatible(contexpr->ty, ty))
-            return expr;
-    }
+//    Vector *list = read_generic_list(&defaultexpr);
+//    for (int i = 0; i < vec_len(list); i++) {
+//        void **pair = vec_get(list, i);
+//        Type *ty = pair[0];
+//        Node *expr = pair[1];
+//        if (type_compatible(contexpr->ty, ty))
+//            return expr;
+//    }
     if (!defaultexpr)
         Error::errort(tok, "no matching generic selection for %s: %s", Utils::node2s(contexpr), Utils::ty2s(contexpr->getTy()));
     return defaultexpr;
+}
+std::vector<std::shared_ptr<DataStruct::Node>> Parser::read_func_args(const std::vector<std::shared_ptr<DataStruct::Type>> &params) {
+//    Vector *args = make_vector();
+    CHECK_CPP();
+    CHECK_LEX();
+    std::vector<std::shared_ptr<DataStruct::Node>> args;
+    int i = 0;
+    for (;;) {
+        if (macro->next(lex->get_keywords(")"))) break;
+        auto arg = conv(read_assignment_expr());
+        std::shared_ptr<DataStruct::Type> paramtype;
+        if (i < params.size()) {
+            paramtype = params[i++];
+        } else {
+            paramtype = is_flotype(arg->getTy()) ? TYPE_DOUBLE :
+                        is_inttype(arg->getTy()) ? TYPE_INT :
+                        arg->getTy();
+        }
+        ensure_assignable(paramtype, arg->getTy());
+        if (paramtype->kind != arg->getTy()->kind)
+            arg = ast_conv(paramtype, arg);
+        args.emplace_back(arg);
+        auto tok = macro->read_token();
+        if (lex->is_keyword(tok, lex->get_keywords(")"))) break;
+        if (!lex->is_keyword(tok, lex->get_keywords(",")))
+            Error::errort(tok, "unexpected token: '%s'", Utils::tok2s(tok));
+    }
+    return args;
+}
+
+std::shared_ptr<DataStruct::Node> Parser::read_funcall(std::shared_ptr<DataStruct::Node> &fp) {
+    if (fp->getKind() == DataStruct::AST_TYPE::AST_ADDR && fp->unop->getKind() == DataStruct::AST_TYPE::AST_FUNCDESG) {
+        auto desg = fp->unop;
+        auto args = read_func_args(desg->getTy()->params);
+        std::vector<DataStruct::Node> margs;
+        for (auto&e:args)
+            margs.emplace_back(*e);
+        return ast_funcall(desg->getTy(), desg->fname, margs);
+    }
+    auto args = read_func_args(fp->getTy()->ptr->params);
+    std::vector<DataStruct::Node> margs;
+    for (auto&e:args)
+        margs.emplace_back(*e);
+    return ast_funcptr_call(fp, margs);
 }
 void Parser::read_static_assert(){
     CHECK_CPP();CHECK_LEX();
@@ -762,7 +829,7 @@ void Parser::read_static_local_var(const std::shared_ptr<DataStruct::Type>& ty, 
         init = read_decl_init(ty);
         localenv = orig;
     }
-    toplevels->emplace_back(ast_decl(var, init));
+    toplevels->emplace_back(*ast_decl(var, init));
 }
 //6.7 Declarations,
 //paramsters type:  6.7.1 At most, one storage-class specifier may be given in the declaration specifiers in a
@@ -775,6 +842,7 @@ void Parser::read_decl(std::vector<DataStruct::Node>* block, bool isglobal){
     CHECK_LEX();
     CHECK_CPP();
     DataStruct::QUALITIFIER sclass = DataStruct::QUALITIFIER::S_PLACEHOLDER;
+
     auto basetype = read_decl_spec_opt(&sclass);
     if (macro->next(lex->get_keywords(";")))
         return;
@@ -789,11 +857,11 @@ void Parser::read_decl(std::vector<DataStruct::Node>* block, bool isglobal){
             read_static_local_var(ty, name);
         } else {
             ensure_not_void(ty);
-            auto var = (isglobal ? ast_gvar : ast_lvar)(ty, name);
+            auto var = isglobal ? ast_gvar(ty, name) : ast_lvar(ty, name);
             if (macro->next(DataStruct::AST_TYPE::ASSIGN)) {
-                block->emplace_back(ast_decl(var, read_decl_init(ty)));
+                block->emplace_back(*ast_decl(var, read_decl_init(ty)));
             } else if (sclass != DataStruct::QUALITIFIER::S_EXTERN && ty->kind != DataStruct::TYPE_KIND::KIND_FUNC) {
-                block->emplace_back(ast_decl(var, nullptr));
+                block->emplace_back(*ast_decl(var, std::vector<std::shared_ptr<DataStruct::Node>>()));
             }
         }
         if (macro->next(lex->get_keywords(";")))
@@ -819,16 +887,17 @@ std::shared_ptr<DataStruct::Type> Parser::read_decl_spec(DataStruct::QUALITIFIER
         Error::errort(tok, "type name expected, but got %s", Utils::tok2s(tok));
 
     std::shared_ptr<DataStruct::Type> usertype = nullptr;
-    enum { kvoid = 1, kbool, kchar, kint, kfloat, kdouble } kind = 0;
-    enum { kshort = 1, klong, kllong } size = 0;
-    enum { ksigned = 1, kunsigned } sig = 0;
+    std::shared_ptr<DataStruct::Type> ty;
+    DataStruct::Kind kind=DataStruct::Kind::kplaceholder;
+    DataStruct::Size size = DataStruct::Size::kplaceholder;
+    DataStruct::Sig sig=DataStruct::Sig::kplaceholder;
     int align = -1;
 
     for (;;) {
         tok = macro->read_token();
         if (tok.kind == DataStruct::TOKEN_TYPE::TEOF)
             Error::error("premature end of input");
-        if (kind == 0 && tok.kind == DataStruct::TOKEN_TYPE::TIDENT && usertype== nullptr) {  //typedef自定义类型
+        if (kind == DataStruct::Kind::kplaceholder&& tok.kind == DataStruct::TOKEN_TYPE::TIDENT && usertype== nullptr) {  //typedef自定义类型
             std::shared_ptr<DataStruct::Type> def = get_typedef(*(tok.sval));
             if (def!= nullptr) {
                 if (usertype!= nullptr) goto err;
@@ -857,15 +926,15 @@ std::shared_ptr<DataStruct::Type> Parser::read_decl_spec(DataStruct::QUALITIFIER
 //            http://zh.cppreference.com/w/c/language/_Noreturn
 //            https://stackoverflow.com/questions/13691361/use-of-noreturn-in-c11
             case DataStruct::AST_TYPE ::KNORETURN: break;
-            case DataStruct::AST_TYPE ::KVOID:     if (kind) goto err; kind = kvoid; break;
-            case DataStruct::AST_TYPE ::KBOOL:     if (kind) goto err; kind = kbool; break;
-            case DataStruct::AST_TYPE ::KCHAR:     if (kind) goto err; kind = kchar; break;
-            case DataStruct::AST_TYPE ::KINT:      if (kind) goto err; kind = kint; break;
-            case DataStruct::AST_TYPE ::KFLOAT:    if (kind) goto err; kind = kfloat; break;
-            case DataStruct::AST_TYPE ::KDOUBLE:   if (kind) goto err; kind = kdouble; break;
-            case DataStruct::AST_TYPE ::KSIGNED:   if (sig) goto err; sig = ksigned; break;
-            case DataStruct::AST_TYPE ::KUNSIGNED: if (sig) goto err; sig = kunsigned; break;
-            case DataStruct::AST_TYPE ::KSHORT:    if (size) goto err; size = kshort; break;
+            case DataStruct::AST_TYPE ::KVOID:     if (kind!=DataStruct::Kind::kplaceholder) goto err; kind = DataStruct::Kind::kvoid; break;
+            case DataStruct::AST_TYPE ::KBOOL:     if (kind!=DataStruct::Kind::kplaceholder) goto err; kind = DataStruct::Kind::kbool; break;
+            case DataStruct::AST_TYPE ::KCHAR:     if (kind!=DataStruct::Kind::kplaceholder) goto err; kind = DataStruct::Kind::kchar; break;
+            case DataStruct::AST_TYPE ::KINT:      if (kind!=DataStruct::Kind::kplaceholder) goto err; kind = DataStruct::Kind::kint; break;
+            case DataStruct::AST_TYPE ::KFLOAT:    if (kind!=DataStruct::Kind::kplaceholder) goto err; kind = DataStruct::Kind::kfloat; break;
+            case DataStruct::AST_TYPE ::KDOUBLE:   if (kind!=DataStruct::Kind::kplaceholder) goto err; kind = DataStruct::Kind::kdouble; break;
+            case DataStruct::AST_TYPE ::KSIGNED:   if (sig!=DataStruct::Sig::kplaceholder) goto err; sig = DataStruct::Sig::ksigned; break;
+            case DataStruct::AST_TYPE ::KUNSIGNED: if (sig!=DataStruct::Sig::kplaceholder) goto err; sig = DataStruct::Sig::kunsigned; break;
+            case DataStruct::AST_TYPE ::KSHORT:    if (size!=DataStruct::Size ::kplaceholder) goto err; size = DataStruct::Size ::kshort; break;
             case DataStruct::AST_TYPE ::KSTRUCT:   if (usertype!= nullptr) goto err; usertype = read_struct_def(); break;
             case DataStruct::AST_TYPE ::KUNION:    if (usertype!= nullptr) goto err; usertype = read_union_def(); break;
             case DataStruct::AST_TYPE ::KENUM:     if (usertype!= nullptr) goto err; usertype = read_enum_def(); break;
@@ -881,8 +950,8 @@ std::shared_ptr<DataStruct::Type> Parser::read_decl_spec(DataStruct::QUALITIFIER
                 break;
             }
             case DataStruct::AST_TYPE::KLONG: {
-                if (size == 0) size = klong;
-                else if (size == klong) size = kllong;
+                if (size == DataStruct::Size ::kplaceholder) size = DataStruct::Size ::klong;
+                else if (size == DataStruct::Size ::klong) size = DataStruct::Size ::kllong;
                 else goto err;
                 break;
             }
@@ -898,15 +967,17 @@ std::shared_ptr<DataStruct::Type> Parser::read_decl_spec(DataStruct::QUALITIFIER
         }
         errcheck:
 //        C11 6.2.5  types
-        if (kind == kbool && (size != 0 || sig != 0))
+        if (kind == DataStruct::Kind::kbool && (size != DataStruct::Size::kplaceholder|| sig != DataStruct::Sig::kplaceholder))
             goto err;
-        if (size == kshort && (kind != 0 && kind != kint))
+        if (size == DataStruct::Size ::kshort && (kind != DataStruct::Kind::kplaceholder&& kind != DataStruct::Kind::kint))
             goto err;
-        if (size == klong && (kind != 0 && kind != kint && kind != kdouble))
+        if (size == DataStruct::Size ::klong && (kind != DataStruct::Kind::kplaceholder&& kind != DataStruct::Kind::kint
+                                                && kind != DataStruct::Kind::kdouble))
             goto err;
-        if (sig != 0 && (kind == kvoid || kind == kfloat || kind == kdouble||kind==kbool))
+        if (sig != DataStruct::Sig::kplaceholder&& (kind == DataStruct::Kind::kvoid || kind == DataStruct::Kind::kfloat
+                                                    || kind == DataStruct::Kind::kdouble||kind==DataStruct::Kind::kbool))
             goto err;
-        if (usertype && (kind != 0 || size != 0 || sig != 0))
+        if (usertype && (kind != DataStruct::Kind::kplaceholder|| size != DataStruct::Size::kplaceholder|| sig != DataStruct::Sig::kplaceholder))
             goto err;
     }
     done:
@@ -916,22 +987,21 @@ std::shared_ptr<DataStruct::Type> Parser::read_decl_spec(DataStruct::QUALITIFIER
         return usertype;
     if (align != -1 && !is_poweroftwo(align))
         Error::errort(tok, "alignment must be power of 2, but got %d", align);
-    std::shared_ptr<DataStruct::Type> ty;
     switch (kind) {
-        case kvoid:   ty = TYPE_VOID; goto end;
-        case kbool:   ty = make_numtype(DataStruct::TYPE_KIND::KIND_BOOL, false); goto end;
-        case kchar:   ty = make_numtype(DataStruct::TYPE_KIND::KIND_CHAR, sig == kunsigned); goto end;
-        case kfloat:  ty = make_numtype(DataStruct::TYPE_KIND::KIND_FLOAT, false); goto end;
-        case kdouble: ty = make_numtype(size == klong ? DataStruct::TYPE_KIND::KIND_LDOUBLE : DataStruct::TYPE_KIND::KIND_DOUBLE, false); goto end;
+        case DataStruct::Kind::kvoid:   ty = TYPE_VOID; goto end;
+        case DataStruct::Kind::kbool:   ty = make_numtype(DataStruct::TYPE_KIND::KIND_BOOL, false); goto end;
+        case DataStruct::Kind::kchar:   ty = make_numtype(DataStruct::TYPE_KIND::KIND_CHAR, sig == DataStruct::Sig::kunsigned); goto end;
+        case DataStruct::Kind::kfloat:  ty = make_numtype(DataStruct::TYPE_KIND::KIND_FLOAT, false); goto end;
+        case DataStruct::Kind::kdouble: ty = make_numtype(size == DataStruct::Size::klong ? DataStruct::TYPE_KIND::KIND_LDOUBLE : DataStruct::TYPE_KIND::KIND_DOUBLE, false); goto end;
         default: break;
     }
     switch (size) {
-        case kshort: ty = make_numtype(DataStruct::TYPE_KIND::KIND_SHORT, sig == kunsigned); goto end;
-        case klong:  ty = make_numtype(DataStruct::TYPE_KIND::KIND_LONG, sig == kunsigned); goto end;
-        case kllong: ty = make_numtype(DataStruct::TYPE_KIND::KIND_LLONG, sig == kunsigned); goto end;
-        default:     ty = make_numtype(DataStruct::TYPE_KIND::KIND_INT, sig == kunsigned); goto end;
+        case DataStruct::Size::kshort: ty = make_numtype(DataStruct::TYPE_KIND::KIND_SHORT, sig == DataStruct::Sig::kunsigned); goto end;
+        case DataStruct::Size::klong:  ty = make_numtype(DataStruct::TYPE_KIND::KIND_LONG, sig == DataStruct::Sig::kunsigned); goto end;
+        case DataStruct::Size::kllong: ty = make_numtype(DataStruct::TYPE_KIND::KIND_LLONG, sig == DataStruct::Sig::kunsigned); goto end;
+        default:     ty = make_numtype(DataStruct::TYPE_KIND::KIND_INT, sig == DataStruct::Sig::kunsigned); goto end;
     }
-    Error::error("internal error: kind: %d, size: %d", kind, size);
+    Error::error("internal error: kind: %d, size: %d", static_cast<int>(kind), static_cast<int>(size));
     end:
     if (align != -1)
         ty->align = align;
@@ -945,7 +1015,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_typeof(){
     macro->expect(lex->get_keywords("("));
     std::shared_ptr<DataStruct::Type> r = is_type(macro->peek_token())
               ? read_cast_type()
-              : read_comma_expr()->ty;
+              : read_comma_expr()->getTy();
     macro->expect(lex->get_keywords(")"));
     return r;
 }
@@ -1001,6 +1071,23 @@ std::shared_ptr<DataStruct::Type> Parser::read_enum_def(){
         Error::errort(macro->peek_token(), "',' or '}' expected, but got %s", Utils::tok2s(macro->peek_token()));
     }
     return TYPE_INT;
+}
+std::shared_ptr<DataStruct::Node> Parser::read_struct_field(const std::shared_ptr<DataStruct::Node> &struc){
+    CHECK_CPP();
+    if (struc->getTy()->kind != DataStruct::TYPE_KIND::KIND_STRUCT)
+        Error::error("struct expected, but got %s", Utils::node2s(struc));
+    auto name = macro->read_token();
+    if (name.kind != DataStruct::TOKEN_TYPE::TIDENT)
+        Error::error("field name expected, but got %s", Utils::tok2s(name));
+    std::shared_ptr<DataStruct::Type> field= nullptr;
+    for (auto &e:struc->getTy()->fields)
+        if (e.first==*name.sval){
+            field=e.second;
+            break;
+        }
+    if (!field)
+        Error::error("struct has no such field: %s", Utils::tok2s(name));
+    return ast_struct_ref(field, struc, *name.sval);
 }
 std::shared_ptr<DataStruct::Type> Parser::read_struct_def(){
     return read_rectype_def(true);
@@ -1103,7 +1190,7 @@ int Parser::read_bitsize(std::string&name,const std::shared_ptr<DataStruct::Type
     int maxsize = type->kind == DataStruct::TYPE_KIND::KIND_BOOL ? 1 : type->size * 8;
     if (r < 0 || maxsize < r)
         Error::errort(tok, "invalid bitfield size for %s: %d", Utils::ty2s(type), r);
-    if (r == 0 && name != NULL)
+    if (r == 0 && !name.empty())
         Error::errort(tok, "zero-width bitfield needs to be unnamed: %s", name);
     return r;
 }
@@ -1209,9 +1296,9 @@ int Parser::compute_padding(int offset, int align) {
 }
 void Parser::squash_unnamed_struct(std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>>&dict, std::shared_ptr<DataStruct::Type> &unnamed, int offset) {
     for (auto&ele:unnamed->fields) {
-        std::shared_ptr<DataStruct::Type> t=std::make_shared<DataStruct::Type>(ele.second);
+        auto t=std::make_shared<DataStruct::Type>(*ele.second);
         t->offset += offset;
-        dict.emplace_back(std::make_shared(ele.first,t));
+        dict.emplace_back(std::make_pair(ele.first,t));
     }
 }
 // C11 6.7.6: Declarators
@@ -1369,7 +1456,7 @@ void Parser::read_declarator_params_oldstyle(std::vector<DataStruct::Node>*vars)
         const DataStruct::Token &tok = macro->read_token();
         if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
             Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
-        vars->emplace_back(ast_lvar(TYPE_INT, *(tok.sval)));
+        vars->emplace_back(*ast_lvar(TYPE_INT, *(tok.sval)));
         if (macro->next(lex->get_keywords(")")))
             return;
         if (!macro->next(lex->get_keywords(",")))
@@ -1447,8 +1534,8 @@ bool Parser::is_same_struct(const std::shared_ptr<DataStruct::Type> &a, const st
             std::transform(b->fields.begin(),b->fields.end(),kb.begin(),key_selector);
             if (ka.size() != kb.size())
                 return false;
-            for (int i = 0; i < vec_len(ka); i++)
-                if (!is_same_struct(vec_get(ka, i), vec_get(kb, i)))
+            for (int i = 0; i < ka.size(); i++)
+                if (!is_same_struct(ka[i], kb[i]))
                     return false;
             return true;
         }
@@ -1533,25 +1620,6 @@ bool Parser::valid_pointer_binop(DataStruct::AST_TYPE op) {
             return false;
     }
 }
-std::shared_ptr<DataStruct::Node> binop(DataStruct::AST_TYPE op, const std::shared_ptr<DataStruct::Node> &lhs, const std::shared_ptr<DataStruct::Node> &rhs) {
-    if (lhs->ty->kind == KIND_PTR && rhs->ty->kind == KIND_PTR) {
-        if (!valid_pointer_binop(op))
-            Error::error("invalid pointer arith");
-        // C11 6.5.6.9: Pointer subtractions have type ptrdiff_t.
-        if (op == '-')
-            return ast_binop(type_long, op, lhs, rhs);
-        // C11 6.5.8.6, 6.5.9.3: Pointer comparisons have type int.
-        return ast_binop(type_int, op, lhs, rhs);
-    }
-    if (lhs->ty->kind == KIND_PTR)
-        return ast_binop(lhs->ty, op, lhs, rhs);
-    if (rhs->ty->kind == KIND_PTR)
-        return ast_binop(rhs->ty, op, rhs, lhs);
-    assert(is_arithtype(lhs->ty));
-    assert(is_arithtype(rhs->ty));
-    Type *r = usual_arith_conv(lhs->ty, rhs->ty);
-    return ast_binop(r, op, wrap(r, lhs), wrap(r, rhs));
-}
 bool is_same_struct(const std::shared_ptr<DataStruct::Type> &a, const std::shared_ptr<DataStruct::Type> &b) {
     if (a->kind != b->kind)
         return false;
@@ -1564,27 +1632,23 @@ bool is_same_struct(const std::shared_ptr<DataStruct::Type> &a, const std::share
         case DataStruct::TYPE_KIND::KIND_STRUCT: {
             if (a->is_struct != b->is_struct)
                 return false;
-            Vector *ka = dict_keys(a->fields);
-            Vector *kb = dict_keys(b->fields);
-            if (a.size() != b.size())
+//            Vector *ka = dict_keys(a->fields);
+//            Vector *kb = dict_keys(b->fields);
+            auto key_selector=[](decltype(a->fields[0]) a1){ return a1.second;};
+            std::vector<std::shared_ptr<DataStruct::Type>> ka;
+            ka.reserve(a->fields.size());
+            std::vector<std::shared_ptr<DataStruct::Type>> kb;
+            kb.reserve(b->fields.size());
+            if (ka.size() != kb.size())
                 return false;
-            for (int i = 0; i < vec_len(ka); i++)
-                if (!is_same_struct(vec_get(ka, i), vec_get(kb, i)))
+            for (int i = 0; i < ka.size(); i++)
+                if (!is_same_struct(ka[i], kb[i]))
                     return false;
             return true;
         }
         default:
             return true;
     }
-}
-
-static void ensure_assignable(Type *totype, Type *fromtype) {
-    if ((is_arithtype(totype) || totype->kind == KIND_PTR) &&
-        (is_arithtype(fromtype) || fromtype->kind == KIND_PTR))
-        return;
-    if (is_same_struct(totype, fromtype))
-        return;
-    error("incompatible kind: <%s> <%s>", ty2s(totype), ty2s(fromtype));
 }
 std::shared_ptr<DataStruct::Node> Parser::read_var_or_func(const std::string &name){
     CHECK_LEX();
@@ -1604,8 +1668,24 @@ std::shared_ptr<DataStruct::Node> Parser::read_var_or_func(const std::string &na
         return ast_funcdesg(v->getTy(), name);
     return v;
 }
-int Parser::get_compound_assign_op(const DataStruct::Token &tok){
-
+DataStruct::AST_TYPE  Parser::get_compound_assign_op(const DataStruct::Token &tok){
+    CHECK_LEX();
+    if (tok.kind != DataStruct::TOKEN_TYPE::TKEYWORD)
+        return DataStruct::AST_TYPE::AST_PLACEHOLDER;
+    switch (tok.id) {
+        case DataStruct::AST_TYPE::OP_A_ADD: return lex->get_keywords("+");
+        case DataStruct::AST_TYPE::OP_A_SUB: return lex->get_keywords("-");
+        case DataStruct::AST_TYPE::OP_A_MUL: return lex->get_keywords("*");
+        case DataStruct::AST_TYPE::OP_A_DIV: return lex->get_keywords("/");
+        case DataStruct::AST_TYPE::OP_A_MOD: return lex->get_keywords("%");
+        case DataStruct::AST_TYPE::OP_A_AND: return lex->get_keywords("&");
+        case DataStruct::AST_TYPE::OP_A_OR:  return lex->get_keywords("|");
+        case DataStruct::AST_TYPE::OP_A_XOR: return lex->get_keywords("^");
+        case DataStruct::AST_TYPE::OP_A_SAL: return DataStruct::AST_TYPE::OP_SAL;
+        case DataStruct::AST_TYPE::OP_A_SAR: return DataStruct::AST_TYPE::OP_SAR;
+        case DataStruct::AST_TYPE::OP_A_SHR: return DataStruct::AST_TYPE::OP_SHR;
+        default: return DataStruct::AST_TYPE::AST_PLACEHOLDER;
+    }
 }
 std::shared_ptr<DataStruct::Node> Parser::read_stmt_expr(){
 
@@ -1660,9 +1740,17 @@ std::shared_ptr<DataStruct::Node> Parser::read_primary_expr(){
     }
 }
 std::shared_ptr<DataStruct::Node>  Parser::read_subscript_expr(const std::shared_ptr<DataStruct::Node> &node){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto tok = macro->peek_token();
+    auto sub = read_expr();
+    if (!sub)
+        Error::errort(tok, "subscription expected");
+    macro->expect(lex->get_keywords("]"));
+    auto t = binop(lex->get_keywords("]"), conv(node), conv(sub));
+    return ast_uop(DataStruct::AST_TYPE::AST_DEREF, t->getTy()->ptr, t);
 }
-std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr_tail(const std::shared_ptr<DataStruct::Node> &node){
+std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr_tail(std::shared_ptr<DataStruct::Node> &node){
     CHECK_CPP();
     CHECK_LEX();
     if (!node) return nullptr;
@@ -1672,31 +1760,30 @@ std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr_tail(const std::shar
             node = conv(node);
             auto t = node->getTy();
             if (t->kind != DataStruct::TYPE_KIND::KIND_PTR || t->ptr->kind != DataStruct::TYPE_KIND::KIND_FUNC)
-                errort(tok, "function expected, but got %s", node2s(node));
+                Error::errort(tok, "function expected, but got %s", Utils::node2s(node));
             node = read_funcall(node);
             continue;
         }
-        if (next_token('[')) {
+        if (macro->next(lex->get_keywords("["))) {
             node = read_subscript_expr(node);
             continue;
         }
-        if (next_token('.')) {
+        if (macro->next(lex->get_keywords("."))) {
             node = read_struct_field(node);
             continue;
         }
-        if (next_token(OP_ARROW)) {
-            if (node->ty->kind != KIND_PTR)
-                error("pointer type expected, but got %s %s",
-                      ty2s(node->ty), node2s(node));
-            node = ast_uop(AST_DEREF, node->ty->ptr, node);
+        if (macro->next(DataStruct::AST_TYPE::OP_ARROW)) {
+            if (node->getTy()->kind != DataStruct::TYPE_KIND::KIND_PTR)
+                Error::error("pointer type expected, but got %s %s", Utils::ty2s(node->getTy()), Utils::node2s(node));
+            node = ast_uop(DataStruct::AST_TYPE::AST_DEREF, node->getTy()->ptr, node);
             node = read_struct_field(node);
             continue;
         }
-        Token *tok = peek();
-        if (next_token(OP_INC) || next_token(OP_DEC)) {
+        auto tok = macro->peek_token();
+        if (macro->next(DataStruct::AST_TYPE::OP_INC) || macro->next(DataStruct::AST_TYPE::OP_DEC)) {
             ensure_lvalue(node);
-            int op = is_keyword(tok, OP_INC) ? OP_POST_INC : OP_POST_DEC;
-            return ast_uop(op, node->ty, node);
+            auto op = lex->is_keyword(tok, DataStruct::AST_TYPE::OP_INC) ? DataStruct::AST_TYPE::OP_POST_INC : DataStruct::AST_TYPE::OP_POST_DEC;
+            return ast_uop(op, node->getTy(), node);
         }
         return node;
     }
@@ -1705,75 +1792,263 @@ std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr(){
     auto node = read_primary_expr();
     return read_postfix_expr_tail(node);
 }
-std::shared_ptr<DataStruct::Node> Parser::read_unary_incdec(int op){
-
+std::shared_ptr<DataStruct::Node> Parser::read_unary_incdec(DataStruct::AST_TYPE op){
+    auto operand = read_unary_expr();
+    operand = conv(operand);
+    ensure_lvalue(operand);
+    return ast_uop(op, operand->getTy(), operand);
 }
-std::shared_ptr<DataStruct::Node> Parser::read_label_addr(const std::shared_ptr<DataStruct::Token> &tok){
-
+std::shared_ptr<DataStruct::Node> Parser::read_label_addr(const DataStruct::Token &tok){
+// [GNU] Labels as values. You can get the address of the a label
+    // with unary "&&" operator followed by a label name.
+    CHECK_LEX();
+    CHECK_CPP();
+    auto tok2 = macro->read_token();
+    if (tok2.kind != DataStruct::TOKEN_TYPE::TIDENT)
+        Error::errort(tok, "label name expected after &&, but got %s", Utils::tok2s(tok2));
+    auto r = ast_label_addr(*(tok2.sval));
+    gotos.push_back(r);
+    return r;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_unary_addr(){
-
+    auto operand = read_cast_expr();
+    if (operand->getKind() == DataStruct::AST_TYPE::AST_FUNCDESG)
+        return conv(operand);
+    ensure_lvalue(operand);
+    return ast_uop(DataStruct::AST_TYPE::AST_ADDR, make_ptr_type(operand->getTy()), operand);
 }
-std::shared_ptr<DataStruct::Node> Parser::read_unary_deref(const std::shared_ptr<DataStruct::Token> &tok){
-
+std::shared_ptr<DataStruct::Node> Parser::read_unary_deref(const DataStruct::Token &tok){
+    auto operand = conv(read_cast_expr());
+    if (operand->getTy()->kind != DataStruct::TYPE_KIND::KIND_PTR)
+        Error::errort(tok, "pointer type expected, but got %s", Utils::node2s(operand));
+    if (operand->getTy()->ptr->kind == DataStruct::TYPE_KIND::KIND_FUNC)
+        return operand;
+    return ast_uop(DataStruct::AST_TYPE::AST_DEREF, operand->getTy()->ptr, operand);
 }
 std::shared_ptr<DataStruct::Node> Parser::read_unary_minus(){
-
+    auto expr = read_cast_expr();
+    ensure_arithtype(expr);
+    if (is_inttype(expr->getTy()))
+        return binop(DataStruct::AST_TYPE::SUB, conv(ast_inttype(expr->getTy(), 0)), conv(expr));
+    return binop(DataStruct::AST_TYPE::SUB, ast_floattype(expr->getTy(), 0), expr);
 }
-std::shared_ptr<DataStruct::Node> Parser::read_unary_bitnot(const std::shared_ptr<DataStruct::Token> &tok){
-
+std::shared_ptr<DataStruct::Node> Parser::read_unary_bitnot(const DataStruct::Token &tok){
+    auto expr = read_cast_expr();
+    expr = conv(expr);
+    if (!is_inttype(expr->getTy()))
+        Error::errort(tok, "invalid use of ~: %s", Utils::node2s(expr));
+    return ast_uop(DataStruct::AST_TYPE::NEG, expr->getTy(), expr);
 }
 std::shared_ptr<DataStruct::Node> Parser::read_unary_lognot(){
-
+    CHECK_LEX();
+    auto operand = read_cast_expr();
+    operand = conv(operand);
+    return ast_uop(lex->get_keywords("!"), TYPE_INT, operand);
 }
 std::shared_ptr<DataStruct::Node> Parser::read_unary_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto tok = macro->read_token();
+    if (tok.kind == DataStruct::TOKEN_TYPE::TKEYWORD) {
+        switch (tok.id) {
+            case DataStruct::AST_TYPE::KSIZEOF: return read_sizeof_operand();
+            case DataStruct::AST_TYPE::KALIGNOF: return read_alignof_operand();
+            case DataStruct::AST_TYPE::OP_INC: return read_unary_incdec(DataStruct::AST_TYPE::OP_PRE_INC);
+            case DataStruct::AST_TYPE::OP_DEC: return read_unary_incdec(DataStruct::AST_TYPE::OP_PRE_DEC);
+            case DataStruct::AST_TYPE::OP_LOGAND: return read_label_addr(tok);
+            case DataStruct::AST_TYPE::AND: return read_unary_addr();
+            case DataStruct::AST_TYPE::MUL: return read_unary_deref(tok);
+            case DataStruct::AST_TYPE::PLUS: return read_cast_expr();
+            case DataStruct::AST_TYPE::SUB: return read_unary_minus();
+            case DataStruct::AST_TYPE::NEG: return read_unary_bitnot(tok);
+            case DataStruct::AST_TYPE::EXCLAMATION: return read_unary_lognot();
+        }
+    }
+    lex->retreat_token(tok);
+    return read_postfix_expr();
+}
+std::shared_ptr<DataStruct::Node> Parser::read_sizeof_operand() {
+    auto ty = read_sizeof_operand_sub();
+    // Sizeof on void or function type is GNU extension
+    int size = (ty->kind == DataStruct::TYPE_KIND::KIND_VOID || ty->kind == DataStruct::TYPE_KIND::KIND_FUNC) ? 1 : ty->size;
+    if (size<0)
+        Error::error("sizeof size should >=0");
+    return ast_inttype(TYPE_ULLONG, size);
+}
+std::shared_ptr<DataStruct::Type> Parser::read_sizeof_operand_sub() {
+    CHECK_LEX();
+    CHECK_CPP();
+    auto tok = macro->read_token();
+    if (lex->is_keyword(tok, lex->get_keywords("(")) && is_type(macro->peek_token())) {
+        auto r = read_cast_type();
+        macro->expect(lex->get_keywords(")"));
+        return r;
+    }
+    lex->retreat_token(tok);
+    return read_unary_expr()->getTy();
+}
+std::shared_ptr<DataStruct::Node> Parser::read_alignof_operand() {
+    CHECK_LEX();
+    CHECK_CPP();
+    macro->expect(lex->get_keywords("("));
+    auto ty = read_cast_type();
+    macro->expect(lex->get_keywords(")"));
+    return ast_inttype(TYPE_ULLONG, ty->align);
 }
 std::shared_ptr<DataStruct::Node> Parser::read_compound_literal(const std::shared_ptr<DataStruct::Type> &ty){
-
+    auto name = make_label();
+    auto init = read_decl_init(ty);
+    auto r = ast_lvar(ty, name);
+    r->lvarinit = init;
+    return r;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_cast_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto tok = macro->read_token();
+    if (lex->is_keyword(tok, lex->get_keywords("(")) && is_type(macro->peek_token())) {
+        auto ty = read_cast_type();
+        macro->expect(lex->get_keywords(")"));
+        if (lex->is_keyword(macro->peek_token(), lex->get_keywords("{"))) {
+            auto node = read_compound_literal(ty);
+            return read_postfix_expr_tail(node);
+        }
+        return ast_uop(DataStruct::AST_TYPE::OP_CAST, ty, read_cast_expr());
+    }
+    lex->retreat_token(tok);
+    return read_unary_expr();
 }
 std::shared_ptr<DataStruct::Node> Parser::read_multiplicative_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_cast_expr();
+    for (;;) {
+        if (macro->next(lex->get_keywords("*")))      node = binop(lex->get_keywords("*"), conv(node), conv(read_cast_expr()));
+        else if (macro->next(lex->get_keywords("/"))) node = binop(lex->get_keywords("/"), conv(node), conv(read_cast_expr()));
+        else if (macro->next(lex->get_keywords("%"))) node = binop(lex->get_keywords("%"), conv(node), conv(read_cast_expr()));
+        else    return node;
+    }
 }
 std::shared_ptr<DataStruct::Node> Parser::read_additive_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_multiplicative_expr();
+    for (;;) {
+        if      (macro->next(lex->get_keywords("+"))) node = binop(lex->get_keywords("+"), conv(node), conv(read_multiplicative_expr()));
+        else if (macro->next(lex->get_keywords("-"))) node = binop(lex->get_keywords("-"), conv(node), conv(read_multiplicative_expr()));
+        else    return node;
+    }
 }
 std::shared_ptr<DataStruct::Node> Parser::read_shift_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_additive_expr();
+    for (;;) {
+        DataStruct::AST_TYPE op;
+        if (macro->next(DataStruct::AST_TYPE::OP_SAL))
+            op = DataStruct::AST_TYPE::OP_SAL;
+        else if (macro->next(DataStruct::AST_TYPE::OP_SAR))
+            op = node->getTy()->usig ? DataStruct::AST_TYPE::OP_SHR : DataStruct::AST_TYPE::OP_SAR;
+        else
+            break;
+        auto right = read_additive_expr();
+        ensure_inttype(node);
+        ensure_inttype(right);
+        node = ast_biop(op, node->getTy(), conv(node), conv(right));
+    }
+    return node;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_relational_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_shift_expr();
+    for (;;) {
+        if      (macro->next(lex->get_keywords("<")))   node = binop(lex->get_keywords("<"),   conv(node), conv(read_shift_expr()));
+        else if (macro->next(lex->get_keywords(">")))   node = binop(lex->get_keywords(">"),   conv(read_shift_expr()), conv(node));
+        else if (macro->next(DataStruct::AST_TYPE::OP_LE)) node = binop(DataStruct::AST_TYPE::OP_LE, conv(node), conv(read_shift_expr()));
+        else if (macro->next(DataStruct::AST_TYPE::OP_GE)) node = binop(DataStruct::AST_TYPE::OP_LE, conv(read_shift_expr()), conv(node));
+        else    return node;
+        node->setTy(TYPE_INT);
+    }
 }
 std::shared_ptr<DataStruct::Node> Parser::read_equality_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_relational_expr();
+    std::shared_ptr<DataStruct::Node> r;
+    if (macro->next(DataStruct::AST_TYPE::OP_EQ)) {
+        r = binop(DataStruct::AST_TYPE::OP_EQ, conv(node), conv(read_equality_expr()));
+    } else if (macro->next(DataStruct::AST_TYPE::OP_NE)) {
+        r = binop(DataStruct::AST_TYPE::OP_NE, conv(node), conv(read_equality_expr()));
+    } else {
+        return node;
+    }
+    r->setTy(TYPE_INT);
+    return r;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_bitand_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_equality_expr();
+    while (macro->next(lex->get_keywords("&")))
+        node = binop(lex->get_keywords("&"), conv(node), conv(read_equality_expr()));
+    return node;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_assignment_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_logor_expr();
+    auto tok = macro->read_token();
+    if (tok.kind==DataStruct::TOKEN_TYPE::TEOF)
+        return node;
+    if (lex->is_keyword(tok, lex->get_keywords("?")))
+        return do_read_conditional_expr(node);
+    auto cop = get_compound_assign_op(tok);
+    if (lex->is_keyword(tok, lex->get_keywords("=")) || cop!=DataStruct::AST_TYPE::AST_PLACEHOLDER) {
+        auto value = conv(read_assignment_expr());
+        if (lex->is_keyword(tok, lex->get_keywords("=")) || cop!=DataStruct::AST_TYPE::AST_PLACEHOLDER)
+            ensure_lvalue(node);
+        auto right = cop!=DataStruct::AST_TYPE::AST_PLACEHOLDER ? binop(cop, conv(node), value) : value;
+        if (is_arithtype(node->getTy()) && node->getTy()->kind != right->getTy()->kind)
+            right = ast_conv(node->getTy(), right);
+        return ast_biop(lex->get_keywords("="),node->getTy(), node, right);
+    }
+    lex->retreat_token(tok);
+    return node;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_comma_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_assignment_expr();
+    while (macro->next(lex->get_keywords(","))) {
+        auto expr = read_assignment_expr();
+        node = ast_biop(lex->get_keywords(","), expr->getTy(),node, expr);
+    }
+    return node;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_expr(){
-
+    CHECK_LEX();
+    CHECK_CPP();
+    auto tok = macro->peek_token();
+    auto r = read_comma_expr();
+    if (!r)
+        Error::errort(tok, "expression expected");
+    return r;
 }
 std::shared_ptr<DataStruct::Node> Parser::do_read_conditional_expr(const std::shared_ptr<DataStruct::Node> &cond) {
-    Node *then = conv(read_comma_expr());
-    expect(':');
-    Node *els = conv(read_conditional_expr());
+    CHECK_LEX();
+    CHECK_CPP();
+    auto then = conv(read_comma_expr());
+    macro->expect(lex->get_keywords(":"));
+    auto els = conv(read_conditional_expr());
     // [GNU] Omitting the middle operand is allowed.
-    Type *t = then ? then->ty : cond->ty;
-    Type *u = els->ty;
+    auto t = then ? then->getTy() : cond->getTy();
+    auto u = els->getTy();
     // C11 6.5.15p5: if both types are arithemtic type, the result
     // type is the result of the usual arithmetic conversions.
     if (is_arithtype(t) && is_arithtype(u)) {
-        Type *r = usual_arith_conv(t, u);
-        return ast_ternary(r, cond, (then ? wrap(r, then) : NULL), wrap(r, els));
+        auto r = usual_arith_conv(t, u);
+        return ast_ternary(r, cond, (then ? wrap(r, then) : nullptr), wrap(r, els));
     }
     return ast_ternary(u, cond, then, els);
 }
@@ -1791,7 +2066,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_logor_expr(){
     CHECK_LEX();
     auto node = read_logand_expr();
     while (macro->next(DataStruct::AST_TYPE::OP_LOGOR))
-        node = ast_binop(TYPE_INT, DataStruct::AST_TYPE::OP_LOGOR, node, read_logand_expr());
+        node = ast_biop(DataStruct::AST_TYPE::OP_LOGOR, TYPE_INT, node, read_logand_expr());
     return node;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_logand_expr(){
@@ -1799,7 +2074,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_logand_expr(){
     CHECK_CPP();
     auto node = read_bitor_expr();
     while (macro->next(DataStruct::AST_TYPE::OP_LOGAND))
-        node = ast_binop(TYPE_INT, DataStruct::AST_TYPE::OP_LOGAND, node, read_bitor_expr());
+        node = ast_biop(DataStruct::AST_TYPE::OP_LOGAND, TYPE_INT, node, read_bitor_expr());
     return node;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_bitor_expr(){
@@ -1807,11 +2082,20 @@ std::shared_ptr<DataStruct::Node> Parser::read_bitor_expr(){
     CHECK_LEX();
     auto node = read_bitxor_expr();
     while (macro->next(lex->get_keywords("|")))
-        node = binop('|', conv(node), conv(read_bitxor_expr()));
+        node = binop(lex->get_keywords("|"), conv(node), conv(read_bitxor_expr()));
     return node;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_bitxor_expr(){
+    CHECK_CPP();
+    CHECK_LEX();
+    auto node = read_bitand_expr();
+    while (macro->next(lex->get_keywords("^")))
+        node = binop(lex->get_keywords("^"), conv(node), conv(read_bitand_expr()));
+    return node;
+}
 
+std::shared_ptr<DataStruct::Node>  Parser::read_expr_opt() {
+    return read_comma_expr();
 }
 //make node with every element in p and put it into inits,for char array, the left room is initialized to zero
 void Parser::assign_string(std::vector<std::shared_ptr<DataStruct::Node>>& inits,
@@ -1888,7 +2172,7 @@ void Parser::read_struct_initializer_sub(std::vector<std::shared_ptr<DataStruct:
     std::vector<std::string> keys;
     keys.reserve(ty->fields.size());
     auto key_selector=[](decltype(ty->fields[0]) ele){ return ele.first;};
-    auto find_key=[](decltype(ty->fields)& ele,const std::string&name){
+    auto find_key=[](decltype(ty->fields)& ele,const std::string&name)->std::shared_ptr<DataStruct::Type>{
         for (auto &e:ele)
             if (e.first==name)
                 return e.second;
@@ -2180,7 +2464,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_default_label(const DataStruct::T
 }
 void Parser::check_case_duplicates(){
     const Case &x = cases.back();
-    for(auto beg=cases.cbegin(),end=--(cases.end());beg!=end;++beg) {
+    for(auto beg=cases.cbegin(),end=--(cases.cend());beg!=end;++beg) {
         if (x.end < beg->beg || beg->end < x.beg)
             continue;
         if (x.beg == x.end)
