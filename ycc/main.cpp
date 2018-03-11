@@ -2,8 +2,6 @@
 #include "include/Token.h"
 #include "include/error.h"
 #include "include/buffer.h"
-#include "include/path.h"
-#include "include/Memory.h"
 #include "include/Lex.h"
 #include "test/funcTest.h"
 
@@ -13,7 +11,7 @@ void ifstreamTest(std::string filename);
 void sharedIoTest();
 void warnpTest();
 
-int main() {
+int main(int argc, char**argv) {
 //    DataStruct::File fi;
 //    DataStruct::Token t;
 //    std::cout << "Hello, World!" << std::endl;
@@ -46,8 +44,10 @@ int main() {
 ////    Error::warnp(std::string("hello"),"%s,%1,%c\n",1,"yes",'c');
 //    Test::lexTokenTest("../test/");
 //    Test::newLineTest();
-    Test::macroExpandTest("../test/",0);
+//    Test::macroExpandTest("../test/",0);
 //    Test::NodeTest();
+//    Utils::ycc_setup_and_work(argc,argv);
+    Test::parserTest("../test/",std::stoi(argv[argc-1]));
     return 0;
 }
 

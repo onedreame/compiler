@@ -84,7 +84,8 @@ namespace DataStruct {
         int position=-1;        //对于函数宏，代表该token是第几个参数
 
         Token()= default;
-
+        Token(const Token&)= default;
+        Token&operator=(const Token&)= default;
         Token(DataStruct::TOKEN_TYPE id,std::string str="",int c='\0',DataStruct::ENCODE enc=DataStruct::ENCODE::ENC_NONE):kind(id),sval(std::make_shared<std::string>(str)),c(c),enc(enc){}
         Token(DataStruct::TOKEN_TYPE id, bool is_var= false,int pos=-1):kind(id),is_vararg(is_var),position(pos){}
         Token(DataStruct::TOKEN_TYPE id,DataStruct::AST_TYPE id2):kind(id),id(id2){}

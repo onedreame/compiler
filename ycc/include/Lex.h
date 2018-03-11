@@ -42,16 +42,6 @@ public:
     void stream_unstash();
     DataStruct::Token lex_string(std::string&);
     static std::shared_ptr<Lex> Instance();
-    explicit Lex(const std::string& fi):filename(fi){
-        fs=std::make_shared<std::ifstream>(filename);
-        if (!(*fs))
-        {
-            Error::error("%s does not exits,please check:%s",filename,strerror(errno));
-        }
-        buffers.push_back(std::vector<DataStruct::Token>());
-        files.push_back(make_file(fs,filename));
-        std::cout<<"fs is open?"<<fs->is_open()<<std::endl;
-    }
 
     void debug(){
         for (int i = 0; i < stashed.size(); ++i) {

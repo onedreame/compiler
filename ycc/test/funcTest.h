@@ -12,5 +12,6 @@ namespace Test{
     void newLineTest();
     void macroExpandTest(const std::string&,int);
     void NodeTest();
+    void parserTest(const std::string&,int);
 }
 #endif //YCC_FUNCTEST_H

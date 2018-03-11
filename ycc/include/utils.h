@@ -11,7 +11,8 @@
 #include <memory>
 #include <vector>
 #include "Token.h"
-
+#include "parser.h"
+class Parser;
 namespace Utils
 {
     void usage(int exitcode) ;
@@ -35,8 +36,13 @@ namespace Utils
     extern bool cpponly;
     extern bool dumpasm;
     extern bool dontlink;
+    extern bool dumpstack;
+    extern bool dumpsource;
     extern std::vector<std::string> cppdefs;  //保存D参数定义的宏
     extern std::vector<std::string> tmpfiles;
+    extern std::shared_ptr<Lex> _lex;
+    extern std::shared_ptr<Parser> _parser;
+    extern std::shared_ptr<MacroPreprocessor> _cpp;
     extern bool dumpstack;
     extern bool dump;
     extern std::string BUILD_DIR;
@@ -46,5 +52,6 @@ namespace Utils
     std::string encoding_prefix(DataStruct::ENCODE enc);
     void do_node2s(std::string&b, const std::shared_ptr<DataStruct::Node> &node);
     void binop_to_string(std::string &b, std::string &op, const std::shared_ptr<DataStruct::Node> &node);
+    void ycc_setup_and_work(int argc, char**argv);
 }
 #endif //YCC_UTILS_H

@@ -10,7 +10,6 @@
 #include <algorithm>
 #include "../include/buffer.h"
 #include "../include/error.h"
-#include "../include/Lex.h"
 #include "../include/utils.h"
 
 namespace Utils{
@@ -22,10 +21,13 @@ namespace Utils{
     bool cpponly;
     bool dumpasm;
     bool dontlink;
-    extern bool dumpstack;
-    extern bool dumpsource;
+    bool dumpstack= false;
+    bool dumpsource= true;
     std::vector<std::string> cppdefs;  //保存D参数定义的宏
     std::vector<std::string> tmpfiles;
+    std::shared_ptr<Lex> _lex= nullptr;
+    std::shared_ptr<MacroPreprocessor> _cpp= nullptr;
+    std::shared_ptr<Parser> _parser= nullptr;
     void delete_temp_files() {
         for (const auto &e:tmpfiles)
             unlink(e.c_str());
@@ -55,7 +57,7 @@ namespace Utils{
                 "  -h            no    print this help\n"
                 "\n"
                 "One of -a, -c, -E or -S must be specified.\n\n";
-        exit(exitcode);
+        quick_exit(exitcode);
     }
 
     std::string base(const std::string& path)  {
@@ -99,10 +101,10 @@ namespace Utils{
     void parse_f_arg(const std::string& s) {
         if (s == "dump-ast")
             dumpast = true;
-//        else if (s == "dump-stack")
-//            dumpstack = true;
-//        else if (s == "no-dump-source")
-//            dumpsource = false;
+        else if (s == "dump-stack")
+            dumpstack = true;
+        else if (s == "no-dump-source")
+            dumpsource = false;
         else
             usage(1);
     }
@@ -116,6 +118,9 @@ namespace Utils{
  * 解析参数，就是usage中的参数
  */
     void parseopt(int argc, char **argv) {
+        _lex=Lex::Instance();
+        _cpp=MacroPreprocessor::Instance();
+        _parser=Parser::Instance();
         for (;;) {
             int opt = getopt(argc, argv, "I:ED:O:SU:W:acd:f:gm:o:hw");
             //解析字符串，按照后面的string解析，如果正确解析返回正值，否则返回-1
@@ -123,25 +128,25 @@ namespace Utils{
                 break;
             switch (opt) {
                 //optarg是getopt内的char*，可能是解析到的参数
-//                case 'I': add_include_path(optarg); break;
+                case 'I': _cpp->add_include_path(optarg); break;
                     //把参数加入vector中
                 case 'E': cpponly = true; break;
                 case 'D': {
-//                    char *p = strchr(optarg, '='); //查找=在optarg中首次出现的位置
-//                    if (p)
-//                        *p = ' ';
-//                    buf_printf(cppdefs, "#define %s\n", optarg);//
+                    char *p = strchr(optarg, '='); //查找=在optarg中首次出现的位置
+                    if (p)
+                        *p = ' ';
+                    cppdefs.emplace_back(format("#define %s", std::string(optarg)));//
                     break;
                 }
                 case 'O': break;
                 case 'S': dumpasm = true; break;
                 case 'U':
-//                    buf_printf(cppdefs, "#undef %s\n", optarg);
+                    cppdefs.emplace_back(format("#undef %s", std::string(optarg)));
                     break;
-                case 'W': parse_warnings_arg(optarg); break;
+                case 'W': parse_warnings_arg(std::string(optarg)); break;
                 case 'c': dontlink = true; break;
-                case 'f': parse_f_arg(optarg); break;
-                case 'm': parse_m_arg(optarg); break;
+                case 'f': parse_f_arg(std::string(optarg)); break;
+                case 'm': parse_m_arg(std::string(optarg)); break;
                 case 'g': break;
                 case 'o': outfile = optarg; break;
                 case 'w': Error::enable_warning = false; break;
@@ -164,18 +169,26 @@ namespace Utils{
     }
 
     void preprocess() {
-//        for (;;) {
-//            Token *tok = read_token();
-//            if (tok->kind == TEOF)
-//                break;
-//            if (tok->bol)
-//                printf("\n");
-//            if (tok->space)
-//                printf(" ");
-//            printf("%s", tok2s(tok));
-//        }
-//        printf("\n");
-//        exit(0);
+        for (;;) {
+            auto tok = _cpp->read_token();
+            if (tok.kind == DataStruct::TOKEN_TYPE::TEOF)
+                break;
+            if (tok.bol)
+                std::cout<<std::endl;
+            if (tok.space)
+                std::cout<<" ";
+            std::cout<<tok2s(tok);
+        }
+        std::cout<<std::endl;
+        quick_exit(0);
+    }
+    void ycc_setup_and_work(int argc, char**argv){
+        if (at_quick_exit(delete_temp_files))
+            perror("exit func was not setup corrently:");
+        parseopt(argc,argv);
+        _lex->add_file(infile);
+        _cpp->set_depency(_lex,_parser);
+        _parser->set_depency(_cpp,_lex);
     }
 
     std::string encoding_prefix(DataStruct::ENCODE enc) {

@@ -44,7 +44,10 @@ public:
     void add_include_path(const std::string &);
     void cpp_init();
     void read_from_string(const std::string&);
-    void set_depency(std::shared_ptr<Lex>&lex, std::shared_ptr<Parser>&parser){lex=lex;parser=parser;}
+    void set_depency(std::shared_ptr<Lex>&_lex, std::shared_ptr<Parser>&_parser){
+        lex=_lex;
+        parser=_parser;
+    }
 
 private:
     std::shared_ptr<Lex> lex= nullptr;
@@ -65,7 +68,7 @@ private:
     MacroPreprocessor(const MacroPreprocessor&)= delete;
     MacroPreprocessor&operator=(MacroPreprocessor&&)= delete;
     MacroPreprocessor(MacroPreprocessor&&)= delete;
-    MacroPreprocessor(){if (Utils::infile.empty()) Error::error("未指定输入文件");lex=std::make_shared<Lex>(Utils::infile);}
+    MacroPreprocessor()= default;
 
     DataStruct::Token read_expand_newline();
     DataStruct::Token read_expand();

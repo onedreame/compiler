@@ -625,7 +625,7 @@ std::vector<DataStruct::Token> MacroPreprocessor::read_intexpr_line(){
         if (tok.kind == DataStruct::TOKEN_TYPE::TNEWLINE)
             return r;
         if (lex->is_ident(tok, "defined")) {
-            r.emplace_back(read_defined_op());
+            r.push_back(read_defined_op());
         } else if (tok.kind == DataStruct::TOKEN_TYPE::TIDENT) {
             // C11 6.10.1.4
             r.push_back(CPP_TOKEN_ZERO);
@@ -935,7 +935,7 @@ void MacroPreprocessor::init_path_and_macros() {
     macros["__INCLUDE_LEVEL__"]= make_special_macro(handle_include_level_macro);
     macros["__TIMESTAMP__"]=make_special_macro(handle_timestamp_macro);
     macros["__BASE_FILE__"]=make_special_macro(handle_base_file_macro);
-    read_from_string(std::string("#include <")+ Utils::BUILD_DIR+std::string("/include/8cc.h>"));
+//    read_from_string(std::string("#include <")+ Utils::BUILD_DIR+std::string("/include/8cc.h>"));
 }
 
 void MacroPreprocessor::init_now() {

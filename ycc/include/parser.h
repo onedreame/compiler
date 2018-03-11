@@ -6,7 +6,7 @@
 #define YCC_PARSER_H
 
 #include "macro.h"
-//class MacroProprocessor;
+
 class Parser
 {
 public:
@@ -32,7 +32,10 @@ public:
     std::shared_ptr<std::vector<DataStruct::Node>> read_toplevels();
     DataStruct::Node read_funcdef();
     std::shared_ptr<DataStruct::Node> read_expr();
-    void set_depency(std::shared_ptr<MacroPreprocessor>& macro,std::shared_ptr<Lex>& lex){lex=lex;macro=macro;}
+    void set_depency(std::shared_ptr<MacroPreprocessor>& _macro,std::shared_ptr<Lex>& _lex){
+        lex=_lex;
+        macro=_macro;
+    }
 private:
     Parser()= default;
     static std::shared_ptr<Parser> _parser;

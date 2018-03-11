@@ -3,16 +3,14 @@
 //
 
 #include "funcTest.h"
-#include "../include/Lex.h"
-#include "../include/macro.h"
 #include "../include/path.h"
-#include "../include/Token.h"
 #include <string>
 #include <unistd.h>
 #include <dirent.h>
 #include <cstring>
 #include <fstream>
 #include <unordered_set>
+#include "../include/utils.h"
 
 namespace Test{
     void lexTokenTest(std::string path){
@@ -39,47 +37,47 @@ namespace Test{
                 //printf("d_name:%s/%s\n",basePath,ptr->d_name);
 //                files.push_back(ptr->d_name);
                 std::cout<<"#################第"<<++id<<"个文件："<<ptr->d_name<<std::endl;
-                Lex lex(path+std::string(ptr->d_name));
-                DataStruct::Token tok=lex.lex();
-                int count=0;
-                while (tok.kind!=DataStruct::TOKEN_TYPE::TEOF)
-                {
-                    std::cout<<count++<<":";
-                    switch (tok.kind){
-                        case DataStruct::TOKEN_TYPE::TSPACE:
-                            std::cout<<"空格";
-                            if(isflush)
-                            std::cout<<std::endl;
-                            break;
-                        case DataStruct::TOKEN_TYPE::TNEWLINE:
-                            std::cout<<"换行";
-                            if (isflush)
-                            std::cout<<std::endl;
-                            break;
-                        case DataStruct::TOKEN_TYPE::TKEYWORD:
-                            std::cout<<KRED<< static_cast<char >(tok.id)<<RST;
-                            if (isflush)
-                            std::cout<<std::endl;
-                            break;
-                        case DataStruct::TOKEN_TYPE::TIDENT:
-                            std::cout<<KGRN<<*(tok.sval)<<RST;
-                            if (isflush)
-                            std::cout<<std::endl;
-                            break;
-                        case DataStruct::TOKEN_TYPE::TNUMBER:
-                        case DataStruct::TOKEN_TYPE::TSTRING:
-                            std::cout<<*(tok.sval);
-                            if (isflush)
-                            std::cout<<std::endl;
-                            break;
-                        default:
-                            std::cout<< static_cast<char >(tok.c);
-                            if (isflush)
-                            std::cout<<std::endl;
-                            break;
-                    }
-
-                    tok=lex.lex();
+//                Lex lex(path+std::string(ptr->d_name));
+//                DataStruct::Token tok=lex.lex();
+//                int count=0;
+//                while (tok.kind!=DataStruct::TOKEN_TYPE::TEOF)
+//                {
+//                    std::cout<<count++<<":";
+//                    switch (tok.kind){
+//                        case DataStruct::TOKEN_TYPE::TSPACE:
+//                            std::cout<<"空格";
+//                            if(isflush)
+//                            std::cout<<std::endl;
+//                            break;
+//                        case DataStruct::TOKEN_TYPE::TNEWLINE:
+//                            std::cout<<"换行";
+//                            if (isflush)
+//                            std::cout<<std::endl;
+//                            break;
+//                        case DataStruct::TOKEN_TYPE::TKEYWORD:
+//                            std::cout<<KRED<< static_cast<char >(tok.id)<<RST;
+//                            if (isflush)
+//                            std::cout<<std::endl;
+//                            break;
+//                        case DataStruct::TOKEN_TYPE::TIDENT:
+//                            std::cout<<KGRN<<*(tok.sval)<<RST;
+//                            if (isflush)
+//                            std::cout<<std::endl;
+//                            break;
+//                        case DataStruct::TOKEN_TYPE::TNUMBER:
+//                        case DataStruct::TOKEN_TYPE::TSTRING:
+//                            std::cout<<*(tok.sval);
+//                            if (isflush)
+//                            std::cout<<std::endl;
+//                            break;
+//                        default:
+//                            std::cout<< static_cast<char >(tok.c);
+//                            if (isflush)
+//                            std::cout<<std::endl;
+//                            break;
+//                    }
+//
+//                    tok=lex.lex();
                 }
                 std::cout<<std::endl;
             }
@@ -98,8 +96,8 @@ namespace Test{
 //                */
 //            }
         }
-        closedir(dir);
-    }
+//        closedir(dir);
+//    }
     void newLineTest()
     {
         std::ifstream fs("/tmp/hello");
@@ -159,5 +157,37 @@ namespace Test{
 //        std::cout<<node.gola->label<<std::endl;
 //        std::cout<<node.gola->newlabel<<std::endl;
 //        node=DataStruct::Node::make_UNOP_node(std::make_shared<DataStruct::Node>());
+    }
+    void parserTest(const std::string&path,int startid){
+        Utils::_lex=Lex::Instance();
+        Utils::_cpp=MacroPreprocessor::Instance();
+        Utils::_parser=Parser::Instance();
+        Utils::_cpp->set_depency(Utils::_lex,Utils::_parser);
+        Utils::_parser->set_depency(Utils::_cpp,Utils::_lex);
+        int id=-1;
+        bool isflush= false;
+        std::ifstream ifs("../testFilename.txt");
+        if (!ifs){
+            perror("无法创新要写的文件...");
+            exit(1);
+        }
+        std::string s;
+        while (ifs>>s){
+            std::cout<<"读取的文件的名字："<<s;
+            std::cout<<std::endl;
+            id++;
+            if (id<startid) continue;
+            Utils::_lex->add_file(Path::fullpath(path+s));
+            Utils::_cpp->cpp_init();
+            DataStruct::Token tok=Utils::_cpp->read_token();
+            int format=0;
+            while (tok.kind!=DataStruct::TOKEN_TYPE::TEOF)
+            {
+                std::cout<<++format<<":"<<Utils::tok2s(tok)<<" ";
+                if (format%11==0) std::cout<<std::endl;
+                else std::cout<<std::flush;
+                tok=Utils::_cpp->read_token();
+            }
+        }
     }
 }

@@ -51,7 +51,7 @@ void Lex::add_file(const std::string& s)
     }
     buffers.push_back(std::vector<DataStruct::Token>());
     files.push_back(make_file(fs,s));
-    std::cout<<"fs is open?"<<fs->is_open()<<std::endl;
+//    std::cout<<"fs is open?"<<fs->is_open()<<std::endl;
 }
 void Lex::retreat_token(DataStruct::Token& tok)
 {
@@ -96,8 +96,9 @@ int Lex::readc_file(std::shared_ptr<DataStruct::File> fi) {
 
 int Lex::readc_string(std::shared_ptr<DataStruct::File> &f) {
     int c;
-    if (f->p.empty()||f->p[0] == '\0') {
+    if (f->p.empty()||f->p.size()==f->cur) {
         c = (f->last == '\n' || f->last == EOF) ? EOF : '\n';
+        f->cur++;
     } else if (f->p[f->cur] == '\r') {
         f->cur++;
         if (f->cur<f->p.size()&&f->p[f->cur] == '\n')
@@ -143,6 +144,7 @@ int Lex::readc() {
         int c2 = get();
         if (c2 == '\n')
             continue;
+//        if (files.back()->file||files.back()->p.size()!=files.back()->cur)
         retreat(c2);
         return c;
     }
@@ -150,7 +152,10 @@ int Lex::readc() {
 
 void Lex::retreat(int c) {
     if (c==EOF) return;
-    files.back()->file->seekg(-1,std::ios::cur);
+    if (files.back()->file)
+        files.back()->file->seekg(-1,std::ios::cur);
+    else
+        files.back()->cur--;
     if (c=='\n')
     {
         files.back()->line--;
