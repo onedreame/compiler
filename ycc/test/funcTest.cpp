@@ -190,4 +190,29 @@ namespace Test{
             }
         }
     }
+    void parserAttrTest(const std::string&path){
+        Utils::_lex=Lex::Instance();
+        Utils::_cpp=MacroPreprocessor::Instance();
+        Utils::_parser=Parser::Instance();
+        Utils::_cpp->set_depency(Utils::_lex,Utils::_parser);
+        Utils::_parser->set_depency(Utils::_cpp,Utils::_lex);
+        int id=-1;
+        bool isflush= false;
+        std::ifstream ifs(path);
+        if (!ifs){
+            perror("无法创新要写的文件...");
+            exit(1);
+        }
+        Utils::_lex->add_file(Path::fullpath(path));
+        Utils::_cpp->cpp_init();
+//        DataStruct::Token tok = Utils::_cpp->read_token();
+//        int format = 0;
+//        while (tok.kind != DataStruct::TOKEN_TYPE::TEOF) {
+//            std::cout << ++format << ":" << Utils::tok2s(tok) << " ";
+//            if (format % 11 == 0) std::cout << std::endl;
+//            else std::cout << std::flush;
+//            tok = Utils::_cpp->read_token();
+//        }
+        Utils::_parser->read_toplevels();
+    }
 }

@@ -42,6 +42,7 @@ public:
     void stream_unstash();
     DataStruct::Token lex_string(std::string&);
     static std::shared_ptr<Lex> Instance();
+    bool in_keyword(const DataStruct::Token& tok){ return keywords.find(*tok.sval)!=keywords.end();}
 
     void debug(){
         for (int i = 0; i < stashed.size(); ++i) {

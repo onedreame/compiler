@@ -72,7 +72,7 @@ DataStruct::Token MacroPreprocessor::read_expand_newline() {
     DataStruct::Token tok = lex->lex();
     if (tok.kind != DataStruct::TOKEN_TYPE ::TIDENT)
         return tok;
-    std::string name = *(tok.sval);
+    std::string name = *tok.sval;
     DataStruct::Macro macro{DataStruct::MacroType::MACRO_INVALID};
     if (macros.count(name)>0)
         macro=macros[name];
@@ -142,6 +142,10 @@ DataStruct::Token MacroPreprocessor::stringize(const DataStruct::Token &tmpl, st
     auto len=args.size();
     for (decltype(args.size()) i = 0; i < len; i++) {
         DataStruct::Token &tok = args[i];
+//        6.10.3.2 Each occurrence of white space between the argument’s preprocessing tokens
+//        becomes a single space character in the character string literal.White space before the
+//        first preprocessing token and after the last preprocessing token composing the argument
+//        is deleted.(前导空格和后置空格在read_one_arg中已经得到消除。）
         if (!b.empty() && tok.space)
             b+=" ";
         b+=Utils::format("%s",Utils::tok2s(tok));
@@ -238,8 +242,8 @@ std::vector<DataStruct::Token > MacroPreprocessor::subst(const DataStruct::Macro
 }
 //置于后备buffers中，以便解析展开后的token
 void MacroPreprocessor::unget_all(std::vector<DataStruct::Token >&tokens) {
-    for (int i = tokens.size() - 1; i >= 0; --i)
-        lex->retreat_token(tokens[i]);
+    for(auto beg=tokens.rbegin();beg!=tokens.rend();++beg)
+        lex->retreat_token(*beg);
 }
 
 DataStruct::Token MacroPreprocessor::peek_token() {
@@ -287,11 +291,11 @@ DataStruct::Token MacroPreprocessor::read_token() {
 DataStruct::Token MacroPreprocessor::may_convert_keyword(const DataStruct::Token &tok) {
     if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
         return tok;
-    if (keywords.count(*(tok.sval))==0)
+    if (!lex->in_keyword(tok))
         return tok;
     DataStruct::Token r = copy_token(tok);
     r.kind = DataStruct::TOKEN_TYPE::TKEYWORD;
-    r.id = keywords[*(tok.sval)];
+    r.id = lex->get_keywords(*tok.sval);
     return r;
 }
 
@@ -455,7 +459,7 @@ void MacroPreprocessor::read_funclike_macro(const DataStruct::Token& name)
     std::vector<DataStruct::Token > body=read_funclike_macro_body(params);
     hashhash_check(body);
     DataStruct::Macro macro = make_func_macro(body, params.size(), is_varg);
-    macros[*(name.sval)]= macro;
+    macros[*name.sval]= macro;
 }
 
 void MacroPreprocessor::hashhash_check(const std::vector<DataStruct::Token >&body) const
@@ -478,8 +482,8 @@ std::vector<DataStruct::Token > MacroPreprocessor::read_funclike_macro_body(cons
             return r;
         if (tok.kind == DataStruct::TOKEN_TYPE::TIDENT) {
             DataStruct::Token subst{DataStruct::TOKEN_TYPE::TPLACEHOLDER,-1};
-            if (params.count(*(tok.sval))>0)
-                subst=params.at(*(tok.sval));
+            if (params.count(*tok.sval)>0)
+                subst=params.at(*tok.sval);
             if (subst.kind!=DataStruct::TOKEN_TYPE::TPLACEHOLDER) {
                 subst = copy_token(subst);
                 subst.space = tok.space;   //主要注意这里，前导空格关系到宏的展开处理
@@ -514,7 +518,7 @@ void MacroPreprocessor::read_define()
         return;
     }
     lex->retreat_token(tok);
-    read_obj_macro(*(name.sval));
+    read_obj_macro(*name.sval);
 }
 
 bool MacroPreprocessor::is_digit_seq(std::string &seq) const {
@@ -540,11 +544,12 @@ void MacroPreprocessor::read_linemarker(const DataStruct::Token &tok)
     fi->line=line;
     fi->name=name;
 }
+//elif前面必须已有宏条件且不能是else
 void MacroPreprocessor::read_elif(const DataStruct::Token &hash)
 {
     if (cond_incl_stack.empty())
         Error::errort(hash, "stray #elif");
-    auto ci = cond_incl_stack.back();
+    auto &ci = cond_incl_stack.back();
     if (ci.ctx == DataStruct::CondInclCtx ::IN_ELSE)
         Error::errort(hash, "#elif after #else");
     ci.ctx = DataStruct::CondInclCtx::IN_ELIF;
@@ -618,6 +623,10 @@ DataStruct::Token MacroPreprocessor::read_defined_op(){
         Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
     return macros.find(*tok.sval)!=macros.end() ? CPP_TOKEN_ONE : CPP_TOKEN_ZERO;
 }
+// C11 6.10.1.4
+//After all replacements due to macro expansion and the defined unary
+//operator have been performed, all remaining identifiers (including those lexically
+//identical to keywords) are replaced with the pp-number 0
 std::vector<DataStruct::Token> MacroPreprocessor::read_intexpr_line(){
     std::vector<DataStruct::Token> r;
     for (;;) {
@@ -627,7 +636,6 @@ std::vector<DataStruct::Token> MacroPreprocessor::read_intexpr_line(){
         if (lex->is_ident(tok, "defined")) {
             r.push_back(read_defined_op());
         } else if (tok.kind == DataStruct::TOKEN_TYPE::TIDENT) {
-            // C11 6.10.1.4
             r.push_back(CPP_TOKEN_ZERO);
         } else {
             r.push_back(tok);
@@ -841,7 +849,7 @@ void MacroPreprocessor::read_undef()
 {
     DataStruct::Token name = read_ident();
     expect_newline();
-    macros.erase(*(name.sval));
+    macros.erase(*name.sval);
 }
 void MacroPreprocessor::read_warning(const DataStruct::Token&hash)
 {

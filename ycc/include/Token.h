@@ -33,37 +33,6 @@ namespace DataStruct {
         int line;
     } ;
 
-    struct Type {
-        Type(DataStruct::TYPE_KIND k,int s=0,int a=0,bool ui=false):kind(k),size(s),align(a),usig(ui){}
-        Type(DataStruct::TYPE_KIND k,bool is_struct=false):kind(k),is_struct(is_struct){}
-        Type(DataStruct::TYPE_KIND k,int s,int a,const std::shared_ptr<Type>& ptr,int len=0):kind(k),size(s),align(a),ptr(ptr),len(len){}
-        Type(DataStruct::TYPE_KIND k,const std::shared_ptr<DataStruct::Type>&ret,const std::vector<std::shared_ptr<Type>>& params,bool hasva,
-             bool oldstype):kind(k),rettype(ret),params(params),hasva(hasva),oldstyle(oldstype){}
-        Type()= default;
-        Type(const Type&)= default;
-        DataStruct::TYPE_KIND kind;
-        int size;       //该type所占字节数
-        int align;
-        bool usig; // 是否是unsigned
-        bool isstatic;
-        // pointer or array
-        std::shared_ptr<Type> ptr= nullptr;
-        // array length
-        int len;
-        // struct
-        std::vector<std::pair<std::string, std::shared_ptr<Type>>> fields;
-        int offset;
-        bool is_struct; // true：struct, false： union
-        // bitfield
-        int bitoff;
-        int bitsize;
-        std::shared_ptr<Type> rettype;   //函数返回类型
-        std::vector<std::shared_ptr<Type>> params;        //函数参数
-        bool hasva;                      //是否有参数
-        //http://en.cppreference.com/w/c/language/function_declaration
-        bool oldstyle;
-    };
-
     struct Token{
         TOKEN_TYPE kind;
         std::shared_ptr<File> file;
@@ -181,147 +150,56 @@ namespace DataStruct {
     };
     class Node;
 
-    struct CTL_Node{
-//        CTL_Node():BASE_Node(NODETYPE::CIL){}
-        long ival;
 
+    /**
+      *  @brief  类型结构体
+      *  @param  __p  A pointer that is convertible to element_type*.
+      *  @param kind  DataStruct::TYPE_KIND params，basic types, void,int etc..
+      *  @param size  int ,memory occupyed  ,in bytes     //该type所占字节数
+      *  @param align  int
+      *  @param usig  whether is unsigned
+      *  @param isstatic  bool
+      *  @param ptr std::shared_ptr<Type> ,default is nullptr, used for pointer or array;
+      *  @param len int,  array length;
+      *  @param fields std::vector<std::pair<std::string, std::shared_ptr<Type>>>, struct or union ;
+      *  @param offset int, user for array or aggregation,;
+      *  @param is_struct bool, true：struct, false： union
+      *  @param bitoff int bitfield;
+      *  @param bitsize int ;
+      *  @param rettype std::shared_ptr<Type> return type for function;
+      *  @param params std::vector<std::shared_ptr<Type>> parameters for function;
+      *  @param hasva bool Does function have parameters?;
+      *  @param oldstyle bool http://en.cppreference.com/w/c/language/function_declaration;
+      */
+    struct Type {
+        Type(DataStruct::TYPE_KIND k,int s=0,int a=0,bool ui=false):kind(k),size(s),align(a),usig(ui){}
+        Type(DataStruct::TYPE_KIND k,bool is_struct=false):kind(k),is_struct(is_struct){}
+        Type(DataStruct::TYPE_KIND k,int s,int a,const std::shared_ptr<Type>& ptr,int len=0):kind(k),size(s),align(a),ptr(ptr),len(len){}
+        Type(DataStruct::TYPE_KIND k,const std::shared_ptr<DataStruct::Type>&ret,const std::vector<std::shared_ptr<Type>>& params,bool hasva,
+             bool oldstype):kind(k),rettype(ret),params(params),hasva(hasva),oldstyle(oldstype){}
+        Type()= default;
+        Type(const Type&)= default;
+        DataStruct::TYPE_KIND kind;
+        int size;
+        int align;
+        bool usig;
+        bool isstatic;
+        std::shared_ptr<Type> ptr= nullptr;
+        int len;
+        std::vector<std::pair<std::string, std::shared_ptr<Type>>> fields;
+        int offset;
+        bool is_struct;
+        int bitoff;
+        int bitsize;
+        std::shared_ptr<Type> rettype;
+        std::vector<std::shared_ptr<Type>> params;
+        bool hasva;
+        bool oldstyle;
     };
-    struct FD_Node{
-//        FD_Node():BASE_Node(NODETYPE::FD){}
-        double fval;
-        std::string flabel;
-    };
-    struct STR_Node{
-//        STR_Node():BASE_Node(NODETYPE::STR){}
-        std::string sval;
-        std::string slabel;
-    };
-    struct LGV_Node{
-//        LGV_Node():BASE_Node(NODETYPE::LGV){}
-        std::string varname;
-        // local
-        int loff;
-        std::vector<DataStruct::Token> lvarinit;
-        // global
-        std::string glabel;
-    };
-    struct BIOP_Node{
-//        BIOP_Node():BASE_Node(NODETYPE::BIOP){}
-        std::shared_ptr<Node> left;
-        std::shared_ptr<Node> right;
-    };
-    struct RET_Node{
-//        RET_Node():BASE_Node(NODETYPE::RET){}
-        std::shared_ptr<Node> retval;
-    };
-    struct FCFD_Node{
-//        FCFD_Node():BASE_Node(NODETYPE::FCFD){}
-        std::string fname;
-        // Function call
-        std::vector<Token> args;
-        std::shared_ptr<Type> ftype;
-        // Function pointer or function designator
-        std::shared_ptr<Node> fptr;
-        // Function declaration
-        std::vector<Token> params;
-        std::vector<Token> localvars;
-        std::shared_ptr<Node> body;
-    };
-    struct DEC_Node{
-//        DEC_Node():BASE_Node(NODETYPE::DEC){}
-        std::shared_ptr<Node> declvar;
-        std::vector<Token> declinit;
-    };
-    struct INIT_Node{
-//        INIT_Node():BASE_Node(NODETYPE::INIT){}
-        std::shared_ptr<Node> initval;
-        int initoff;
-        std::shared_ptr<Type> totype;
-    };
-    struct IFTOP_Node{
-//        IFTOP_Node():BASE_Node(NODETYPE::IFTOP){}
-        std::shared_ptr<Node> cond;
-        std::shared_ptr<Node> then;
-        std::shared_ptr<Node> els;
-    };
-    struct STRREF_Node{
-//        STRREF_Node():BASE_Node(NODETYPE::STRREF){}
-        std::shared_ptr<Node> struc;
-        std::string field;
-        std::shared_ptr<Type> fieldtype;
-    };
-    struct COMPO_Node{
-//        COMPO_Node():BASE_Node(NODETYPE::COMPO){}
-        std::vector<DataStruct::Token> stmts;
-    };
-    struct GOLA_Node{
-//        GOLA_Node():BASE_Node(NODETYPE::GOLA){}
-        std::string label;
-        std::string newlabel;
-    };
-    struct UNOP_Node{
-//        UNOP_Node():BASE_Node(NODETYPE::UNOP){}
-        std::shared_ptr<Node> unop;
-    };
-
 
     class Node{
     public:
-//        using Fd =struct {
-//            double fval;
-//            std::string flabel;
-//        }; // float or double
-//        using Str=struct {
-//            std::string sval;
-//            std::string slabel;
-//        };// string
-//        using LGv=struct {
-//            std::string varname;
-//            // local
-//            int loff;
-//            std::vector<DataStruct::Token> lvarinit;
-//            // global
-//            std::string glabel;
-//        };            // local/global 变量
-//        using Biop=struct {
-//            std::shared_ptr<Node> left;
-//            std::shared_ptr<Node> right;
-//        };      // binary op
-//        using Fcfd=struct {
-//            std::string fname;
-//            // Function call
-//            std::vector<Token> args;
-//            std::shared_ptr<Type> ftype;
-//            // Function pointer or function designator
-//            std::shared_ptr<Node> fptr;
-//            // Function declaration
-//            std::vector<Token> params;
-//            std::vector<Token> localvars;
-//            std::shared_ptr<Node> body;
-//        };// 函数调用或声明
-//        using Dec=struct {
-//            std::shared_ptr<Node> declvar;
-//            std::vector<Token> declinit;
-//        };    // 声明
-//        using Init=struct {
-//            std::shared_ptr<Node> initval;
-//            int initoff;
-//            std::shared_ptr<Type> totype;
-//        };  // 初始化
-//        using Iftop=struct {
-//            std::shared_ptr<Node> cond;
-//            std::shared_ptr<Node> then;
-//            std::shared_ptr<Node> els;
-//        };// if语句或ternary op
-//        using Gola=struct {
-//            std::string label;
-//            std::string newlabel;
-//        };// goto label
-//        using Strref=struct {
-//            std::shared_ptr<Node> struc;
-//            std::string field;
-//            std::shared_ptr<Type> fieldtype;
-//        };// struct引用
+
         Node():tok(NODETYPE::CIL),ival(0){}
         Node(const Node&r)= default;
         Node&operator=(const Node&)= default;
@@ -447,3 +325,143 @@ namespace DataStruct {
     };
 }
 #endif //YCC_TOKEN_H
+
+//        using Fd =struct {
+//            double fval;
+//            std::string flabel;
+//        }; // float or double
+//        using Str=struct {
+//            std::string sval;
+//            std::string slabel;
+//        };// string
+//        using LGv=struct {
+//            std::string varname;
+//            // local
+//            int loff;
+//            std::vector<DataStruct::Token> lvarinit;
+//            // global
+//            std::string glabel;
+//        };            // local/global 变量
+//        using Biop=struct {
+//            std::shared_ptr<Node> left;
+//            std::shared_ptr<Node> right;
+//        };      // binary op
+//        using Fcfd=struct {
+//            std::string fname;
+//            // Function call
+//            std::vector<Token> args;
+//            std::shared_ptr<Type> ftype;
+//            // Function pointer or function designator
+//            std::shared_ptr<Node> fptr;
+//            // Function declaration
+//            std::vector<Token> params;
+//            std::vector<Token> localvars;
+//            std::shared_ptr<Node> body;
+//        };// 函数调用或声明
+//        using Dec=struct {
+//            std::shared_ptr<Node> declvar;
+//            std::vector<Token> declinit;
+//        };    // 声明
+//        using Init=struct {
+//            std::shared_ptr<Node> initval;
+//            int initoff;
+//            std::shared_ptr<Type> totype;
+//        };  // 初始化
+//        using Iftop=struct {
+//            std::shared_ptr<Node> cond;
+//            std::shared_ptr<Node> then;
+//            std::shared_ptr<Node> els;
+//        };// if语句或ternary op
+//        using Gola=struct {
+//            std::string label;
+//            std::string newlabel;
+//        };// goto label
+//        using Strref=struct {
+//            std::shared_ptr<Node> struc;
+//            std::string field;
+//            std::shared_ptr<Type> fieldtype;
+//        };// struct引用
+
+
+//    struct CTL_Node{
+////        CTL_Node():BASE_Node(NODETYPE::CIL){}
+//        long ival;
+//
+//    };
+//    struct FD_Node{
+////        FD_Node():BASE_Node(NODETYPE::FD){}
+//        double fval;
+//        std::string flabel;
+//    };
+//    struct STR_Node{
+////        STR_Node():BASE_Node(NODETYPE::STR){}
+//        std::string sval;
+//        std::string slabel;
+//    };
+//    struct LGV_Node{
+////        LGV_Node():BASE_Node(NODETYPE::LGV){}
+//        std::string varname;
+//        // local
+//        int loff;
+//        std::vector<DataStruct::Token> lvarinit;
+//        // global
+//        std::string glabel;
+//    };
+//    struct BIOP_Node{
+////        BIOP_Node():BASE_Node(NODETYPE::BIOP){}
+//        std::shared_ptr<Node> left;
+//        std::shared_ptr<Node> right;
+//    };
+//    struct RET_Node{
+////        RET_Node():BASE_Node(NODETYPE::RET){}
+//        std::shared_ptr<Node> retval;
+//    };
+//    struct FCFD_Node{
+////        FCFD_Node():BASE_Node(NODETYPE::FCFD){}
+//        std::string fname;
+//        // Function call
+//        std::vector<Token> args;
+//        std::shared_ptr<Type> ftype;
+//        // Function pointer or function designator
+//        std::shared_ptr<Node> fptr;
+//        // Function declaration
+//        std::vector<Token> params;
+//        std::vector<Token> localvars;
+//        std::shared_ptr<Node> body;
+//    };
+//    struct DEC_Node{
+////        DEC_Node():BASE_Node(NODETYPE::DEC){}
+//        std::shared_ptr<Node> declvar;
+//        std::vector<Token> declinit;
+//    };
+//    struct INIT_Node{
+////        INIT_Node():BASE_Node(NODETYPE::INIT){}
+//        std::shared_ptr<Node> initval;
+//        int initoff;
+//        std::shared_ptr<Type> totype;
+//    };
+//    struct IFTOP_Node{
+////        IFTOP_Node():BASE_Node(NODETYPE::IFTOP){}
+//        std::shared_ptr<Node> cond;
+//        std::shared_ptr<Node> then;
+//        std::shared_ptr<Node> els;
+//    };
+//    struct STRREF_Node{
+////        STRREF_Node():BASE_Node(NODETYPE::STRREF){}
+//        std::shared_ptr<Node> struc;
+//        std::string field;
+//        std::shared_ptr<Type> fieldtype;
+//    };
+//    struct COMPO_Node{
+////        COMPO_Node():BASE_Node(NODETYPE::COMPO){}
+//        std::vector<DataStruct::Token> stmts;
+//    };
+//    struct GOLA_Node{
+////        GOLA_Node():BASE_Node(NODETYPE::GOLA){}
+//        std::string label;
+//        std::string newlabel;
+//    };
+//    struct UNOP_Node{
+////        UNOP_Node():BASE_Node(NODETYPE::UNOP){}
+//        std::shared_ptr<Node> unop;
+//    };

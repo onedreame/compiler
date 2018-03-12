@@ -47,7 +47,11 @@ int main(int argc, char**argv) {
 //    Test::macroExpandTest("../test/",0);
 //    Test::NodeTest();
 //    Utils::ycc_setup_and_work(argc,argv);
+    std::cout<<"argc:"<<argc<<std::endl;
+    for(int i=0;i<argc;++i)
+        std::cout<<argv[i]<<std::endl;
     Test::parserTest("../test/",std::stoi(argv[argc-1]));
+//    Test::parserAttrTest(argv[1]);
     return 0;
 }
 

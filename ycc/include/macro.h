@@ -53,13 +53,12 @@ private:
     std::shared_ptr<Lex> lex= nullptr;
     std::shared_ptr<Parser> parser= nullptr;
     std::unordered_map<std::string,DataStruct::Macro> macros;
-    std::unordered_map<std::string,DataStruct::AST_TYPE > keywords;
     std::vector<DataStruct::CondIncl >cond_incl_stack;
     //key:文件路径，value：文件的包含哨
     std::unordered_map<std::string,std::string> include_guard;
     std::unordered_map<std::string,int> once;
-    const DataStruct::Token CPP_TOKEN_ONE=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,"1");
-    const DataStruct::Token CPP_TOKEN_ZERO=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,"0");
+    const DataStruct::Token CPP_TOKEN_ONE=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,std::string("1"));
+    const DataStruct::Token CPP_TOKEN_ZERO=DataStruct::Token(DataStruct::TOKEN_TYPE::TNUMBER,std::string("0"));
     std::vector<std::string> std_include_path;
 
     struct tm now;
