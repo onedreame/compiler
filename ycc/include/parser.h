@@ -27,6 +27,19 @@ public:
     std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>> env(){
         return localenv?localenv:globalenv;
     };
+    using env_type = std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>;
+
+    void debugenv(int depth,const env_type& env){
+        for(auto&e:*env)
+        {
+            for(int i=0;i<depth;++i)
+                std::cout<<" ";
+            std::cout<<e.first<<std::endl;
+        }
+        if (scope.find(env)!=scope.end())
+            debugenv(depth+4,scope[env]);
+    }
+
     static std::shared_ptr<Parser> Instance();
     int eval_intexpr(const std::shared_ptr<DataStruct::Node> &, std::shared_ptr<DataStruct::Node> *);
     std::shared_ptr<std::vector<DataStruct::Node>> read_toplevels();
@@ -309,6 +322,8 @@ private:
     std::shared_ptr<DataStruct::Node> read_continue_stmt(const DataStruct::Token &tok);
     std::shared_ptr<DataStruct::Node> read_return_stmt();
     std::shared_ptr<DataStruct::Node> read_goto_stmt();
+
+    std::shared_ptr<DataStruct::Node> var_lookup(const std::string& name);
 };
 auto lower=[](const std::string&s)->std::string {std::string b;for(auto&e:s) b+=tolower(e);return b;};
 #endif //YCC_PARSER_H

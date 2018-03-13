@@ -80,8 +80,9 @@ std::shared_ptr<DataStruct::Type> Parser::make_numtype(DataStruct::TYPE_KIND kin
  */
 std::shared_ptr<DataStruct::Type> Parser::make_func_type(const std::shared_ptr<DataStruct::Type> &rettype, const std::vector<DataStruct::Type> &paramtypes, bool has_varargs, bool oldstyle) {
     std::vector<std::shared_ptr<DataStruct::Type>> tmp;
-    tmp.reserve(paramtypes.size());
-    std::transform(paramtypes.begin(),paramtypes.end(),tmp.begin(),[](const DataStruct::Type&e){ return std::make_shared<DataStruct::Type>(e);});
+    for(auto&e:paramtypes) tmp.emplace_back(std::make_shared<DataStruct::Type>(e));
+//    tmp.reserve(paramtypes.size());
+//    std::transform(paramtypes.cbegin(),paramtypes.cend(),tmp.begin(),[](decltype(paramtypes.cbegin())&e){ return std::make_shared<DataStruct::Type>(*e);});
     return std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_FUNC,rettype,tmp,has_varargs,oldstyle);
 }
 /**
@@ -462,7 +463,11 @@ std::shared_ptr<DataStruct::Node> Parser::ast_dest(const std::string &label){
     node->newlabel=label;
     return node;
 }
-//label address??????
+/**
+ * label address是GUN的拓展，可以通过&&label获取label的地址，因为本身label是没什么含义的，因而其type为void，
+ * @param label 构建node的label名字
+ * @return node
+ */
 std::shared_ptr<DataStruct::Node> Parser::ast_label_addr(const std::string &label){
     auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::OP_LABEL_ADDR, make_ptr_type(TYPE_VOID),sl);
     node->label=label;
@@ -653,13 +658,16 @@ void Parser::skip_parentheses(std::vector<DataStruct::Token>&buf){
         const DataStruct::Token& tok=lex->lex();
         if (tok.kind==DataStruct::TOKEN_TYPE::TEOF)
             Error::error("premature end of input");
-        if (!nest&&lex->is_keyword(tok,lex->get_keywords(")")))
-            break;
-        if (lex->is_keyword(tok,lex->get_keywords("(")))
-            ++nest;
-        if (lex->is_keyword(tok,lex->get_keywords(")")))
-            --nest;
         buf.push_back(tok);
+        if (!nest&&lex->is_keyword(tok,lex->get_keywords(")"))) {
+            break;
+        }
+        if (lex->is_keyword(tok,lex->get_keywords("("))) {
+            ++nest;
+        }
+        if (lex->is_keyword(tok,lex->get_keywords(")"))) {
+            --nest;
+        }
     }
 }
 //params不是普通的变量，因而不应该保存在localenv中
@@ -1614,7 +1622,7 @@ int Parser::read_alignas(){
 
 //6.7.5 p2 An alignment attribute shall not be specified in a declaration of a typedef, or a bit-field, or
 //a function, or a parameter, or an object declared with the register storage-class specifier
-std::shared_ptr<DataStruct::Type> Parser::read_cast_type() {
+std::shared_ptr<DataStruct::Type> Parser:: read_cast_type() {
     return read_abstract_declarator(read_decl_spec(nullptr));
 }
 //C11 6.7.7
@@ -1655,6 +1663,15 @@ std::shared_ptr<DataStruct::Node> Parser::binop(DataStruct::AST_TYPE op, const s
     auto r = usual_arith_conv(lhs->getTy(), rhs->getTy());
     return ast_biop(op, r, wrap(r, lhs), wrap(r, rhs));
 }
+/**
+ * （1)KIND_ARRAY: 指向的数据是否相同（递归）以及长度是否相同
+ * （2)KIND_STRUCT:fields内的所有元素是否相同（递归）
+ * （3)KIND_PTR：指向的数据是否相同（递归）
+ * （4)同kind：除以上3种情况，同种kind返回true，否则返回false
+ * @param a
+ * @param b
+ * @return bool
+ */
 bool Parser::is_same_struct(const std::shared_ptr<DataStruct::Type> &a, const std::shared_ptr<DataStruct::Type> &b){
     if (a->kind != b->kind)
         return false;
@@ -1788,9 +1805,8 @@ bool Parser::valid_pointer_binop(DataStruct::AST_TYPE op) {
 std::shared_ptr<DataStruct::Node> Parser::read_var_or_func(const std::string &name){
     CHECK_LEX();
     CHECK_CPP();
-    std::shared_ptr<DataStruct::Node> v= nullptr;
-    if(env()->find(name)!=env()->end())
-        v=env()->at(name);
+    std::shared_ptr<DataStruct::Node> v= var_lookup(name);
+    debugenv(0,localenv);
     if (!v) {
         const DataStruct::Token &tok = macro->peek_token();
         if (!lex->is_keyword(tok, lex->get_keywords("(")))
@@ -1822,6 +1838,9 @@ DataStruct::AST_TYPE  Parser::get_compound_assign_op(const DataStruct::Token &to
         default: return DataStruct::AST_TYPE::AST_PLACEHOLDER;
     }
 }
+/*
+ * {})
+ */
 std::shared_ptr<DataStruct::Node> Parser::read_stmt_expr(){
     CHECK_CPP();
     CHECK_LEX();
@@ -1871,13 +1890,13 @@ std::shared_ptr<DataStruct::Node> Parser::read_primary_expr(){
     }
     switch (tok.kind) {
         case DataStruct::TOKEN_TYPE::TIDENT:
-            return read_var_or_func(*(tok.sval));
+            return read_var_or_func(*tok.sval);
         case DataStruct::TOKEN_TYPE::TNUMBER:
             return read_number(tok);
         case DataStruct::TOKEN_TYPE::TCHAR:
             return ast_inttype(char_type(tok.enc), tok.c);
         case DataStruct::TOKEN_TYPE::TSTRING:
-            return ast_string(tok.enc, *(tok.sval));
+            return ast_string(tok.enc, *tok.sval);
         case DataStruct::TOKEN_TYPE::TKEYWORD:
             lex->retreat_token(tok);
             return nullptr;
@@ -1934,10 +1953,25 @@ std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr_tail(std::shared_ptr
         return node;
     }
 }
+//postfix-expression:
+//        primary-expression
+//        postfix-expression [ expression ]
+//        postfix-expression ( argument-expression-listopt )
+//        postfix-expression . identifier
+//        postfix-expression -> identifier
+//        postfix-expression ++
+//        postfix-expression --
+//        ( type-name ) { initializer-list }
+//        ( type-name ) { initializer-list , }
+//argument-expression-list:
+//        assignment-expression
+//        argument-expression-list , assignment-expression
 std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr(){
     auto node = read_primary_expr();
     return read_postfix_expr_tail(node);
 }
+//6.5.3.1 p1 The operand of the prefix increment or decrement operator shall have atomic, qualified,
+//or unqualified real or pointer type, and shall be a modifiable lvalue
 std::shared_ptr<DataStruct::Node> Parser::read_unary_incdec(DataStruct::AST_TYPE op){
     auto operand = read_unary_expr();
     operand = conv(operand);
@@ -1952,7 +1986,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_label_addr(const DataStruct::Toke
     auto tok2 = macro->read_token();
     if (tok2.kind != DataStruct::TOKEN_TYPE::TIDENT)
         Error::errort(tok, "label name expected after &&, but got %s", Utils::tok2s(tok2));
-    auto r = ast_label_addr(*(tok2.sval));
+    auto r = ast_label_addr(*tok2.sval);
     gotos.push_back(r);
     return r;
 }
@@ -1991,6 +2025,16 @@ std::shared_ptr<DataStruct::Node> Parser::read_unary_lognot(){
     operand = conv(operand);
     return ast_uop(lex->get_keywords("!"), TYPE_INT, operand);
 }
+//unary-expression:
+//        postfix-expression
+//        ++ unary-expression
+//        -- unary-expression
+//        unary-operator cast-expression
+//        sizeof unary-expression
+//        sizeof ( type-name )
+//        alignof ( type-name )
+//unary-operator: one of
+//        & * + - ~ !
 std::shared_ptr<DataStruct::Node> Parser::read_unary_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -2048,6 +2092,9 @@ std::shared_ptr<DataStruct::Node> Parser::read_compound_literal(const std::share
     r->lvarinit = init;
     return r;
 }
+//cast-expression:
+//        unary-expression
+//        (type-name ) cast-expression
 std::shared_ptr<DataStruct::Node> Parser::read_cast_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -2064,6 +2111,11 @@ std::shared_ptr<DataStruct::Node> Parser::read_cast_expr(){
     lex->retreat_token(tok);
     return read_unary_expr();
 }
+//multiplicative-expression:
+//        cast-expression
+//        multiplicative-expression * cast-expression
+//        multiplicative-expression / cast-expression
+//        multiplicative-expression % cast-expression
 std::shared_ptr<DataStruct::Node> Parser::read_multiplicative_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -2075,6 +2127,10 @@ std::shared_ptr<DataStruct::Node> Parser::read_multiplicative_expr(){
         else    return node;
     }
 }
+//additive-expression:
+//        multiplicative-expression
+//        additive-expression + multiplicative-expression
+//        additive-expression - multiplicative-expression
 std::shared_ptr<DataStruct::Node> Parser::read_additive_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -2085,6 +2141,11 @@ std::shared_ptr<DataStruct::Node> Parser::read_additive_expr(){
         else    return node;
     }
 }
+//shift-expression:
+//        additive-expression
+//        shift-expression << additive-expression
+//        shift-expression >> additive-expression
+//左结合运算符
 std::shared_ptr<DataStruct::Node> Parser::read_shift_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -2098,12 +2159,20 @@ std::shared_ptr<DataStruct::Node> Parser::read_shift_expr(){
         else
             break;
         auto right = read_additive_expr();
+        //6.5.7 p2 Each of the operands shall have integer type.
         ensure_inttype(node);
         ensure_inttype(right);
         node = ast_biop(op, node->getTy(), conv(node), conv(right));
     }
     return node;
 }
+
+//relational-expression:
+//        shift-expression
+//        relational-expression < shift-expression
+//        relational-expression > shift-expression
+//        relational-expression <= shift-expression
+//        relational-expression >= shift-expression
 std::shared_ptr<DataStruct::Node> Parser::read_relational_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -2114,9 +2183,14 @@ std::shared_ptr<DataStruct::Node> Parser::read_relational_expr(){
         else if (macro->next(DataStruct::AST_TYPE::OP_LE)) node = binop(DataStruct::AST_TYPE::OP_LE, conv(node), conv(read_shift_expr()));
         else if (macro->next(DataStruct::AST_TYPE::OP_GE)) node = binop(DataStruct::AST_TYPE::OP_LE, conv(read_shift_expr()), conv(node));
         else    return node;
-        node->setTy(TYPE_INT);
+        node->setTy(TYPE_INT);  //6.5.8 p6
     }
 }
+//equality-expression:
+//        relational-expression
+//        equality-expression == relational-expression
+//        equality-expression != relational-expression
+//左结合运算符
 std::shared_ptr<DataStruct::Node> Parser::read_equality_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -2129,9 +2203,14 @@ std::shared_ptr<DataStruct::Node> Parser::read_equality_expr(){
     } else {
         return node;
     }
+    //6.5.9 p3  The result has type int.
     r->setTy(TYPE_INT);
     return r;
 }
+//AND-expression:
+//        equality-expression
+//        AND-expression & equality-expression
+//左结合运算符
 std::shared_ptr<DataStruct::Node> Parser::read_bitand_expr(){
     CHECK_LEX();
     CHECK_CPP();
@@ -2140,7 +2219,63 @@ std::shared_ptr<DataStruct::Node> Parser::read_bitand_expr(){
         node = binop(lex->get_keywords("&"), conv(node), conv(read_equality_expr()));
     return node;
 }
-
+//exclusive-OR-expression:
+//        AND-expression
+//        exclusive-OR-expression ^ AND-expression
+//左结合运算符
+std::shared_ptr<DataStruct::Node> Parser::read_bitxor_expr(){
+    CHECK_CPP();
+    CHECK_LEX();
+    auto node = read_bitand_expr();
+    while (macro->next(lex->get_keywords("^")))
+        //6.5.11 p1 Each of the operands shall have integer type.
+        node = binop(lex->get_keywords("^"), conv(node), conv(read_bitand_expr()));
+    return node;
+}
+//inclusive-OR-expression:
+//        exclusive-OR-expression
+//        inclusive-OR-expression | exclusive-OR-expression
+std::shared_ptr<DataStruct::Node> Parser::read_bitor_expr(){
+    CHECK_CPP();
+    CHECK_LEX();
+    auto node = read_bitxor_expr();
+    while (macro->next(lex->get_keywords("|")))
+        //6.5.10 p2 Each of the operands shall have integer type.
+        node = binop(lex->get_keywords("|"), conv(node), conv(read_bitxor_expr()));
+    return node;
+}
+//logical-AND-expression:
+//        inclusive-OR-expression
+//        logical-AND-expression && inclusive-OR-expression
+//左结合运算符
+std::shared_ptr<DataStruct::Node> Parser::read_logand_expr(){
+    CHECK_LEX();
+    CHECK_CPP();
+    auto node = read_bitor_expr();
+    while (macro->next(DataStruct::AST_TYPE::OP_LOGAND))
+        node = ast_biop(DataStruct::AST_TYPE::OP_LOGAND, TYPE_INT, node, read_bitor_expr());
+    return node;
+}
+//logical-OR-expression:
+//        logical-AND-expression
+//        logical-OR-expression || logical-AND-expression
+//左结合运算符
+std::shared_ptr<DataStruct::Node> Parser::read_logor_expr(){
+    CHECK_CPP();
+    CHECK_LEX();
+    auto node = read_logand_expr();
+    while (macro->next(DataStruct::AST_TYPE::OP_LOGOR))
+        node = ast_biop(DataStruct::AST_TYPE::OP_LOGOR, TYPE_INT, node, read_logand_expr());
+    return node;
+}
+std::shared_ptr<DataStruct::Node> Parser::read_conditional_expr() {
+    CHECK_LEX();
+    CHECK_CPP();
+    auto cond = read_logor_expr();
+    if (!macro->next(lex->get_keywords("?")))
+        return cond;
+    return do_read_conditional_expr(cond);
+}
 std::shared_ptr<DataStruct::Node> Parser::do_read_conditional_expr(const std::shared_ptr<DataStruct::Node> &cond) {
     CHECK_LEX();
     CHECK_CPP();
@@ -2157,49 +2292,6 @@ std::shared_ptr<DataStruct::Node> Parser::do_read_conditional_expr(const std::sh
         return ast_ternary(r, cond, (then ? wrap(r, then) : nullptr), wrap(r, els));
     }
     return ast_ternary(u, cond, then, els);
-}
-
-std::shared_ptr<DataStruct::Node> Parser::read_conditional_expr() {
-    CHECK_LEX();
-    CHECK_CPP();
-    auto cond = read_logor_expr();
-    if (!macro->next(lex->get_keywords("?")))
-        return cond;
-    return do_read_conditional_expr(cond);
-}
-std::shared_ptr<DataStruct::Node> Parser::read_bitor_expr(){
-    CHECK_CPP();
-    CHECK_LEX();
-    auto node = read_bitxor_expr();
-    while (macro->next(lex->get_keywords("|")))
-        node = binop(lex->get_keywords("|"), conv(node), conv(read_bitxor_expr()));
-    return node;
-}
-std::shared_ptr<DataStruct::Node> Parser::read_bitxor_expr(){
-    CHECK_CPP();
-    CHECK_LEX();
-    auto node = read_bitand_expr();
-    while (macro->next(lex->get_keywords("^")))
-        node = binop(lex->get_keywords("^"), conv(node), conv(read_bitand_expr()));
-    return node;
-}
-
-std::shared_ptr<DataStruct::Node> Parser::read_logand_expr(){
-    CHECK_LEX();
-    CHECK_CPP();
-    auto node = read_bitor_expr();
-    while (macro->next(DataStruct::AST_TYPE::OP_LOGAND))
-        node = ast_biop(DataStruct::AST_TYPE::OP_LOGAND, TYPE_INT, node, read_bitor_expr());
-    return node;
-}
-
-std::shared_ptr<DataStruct::Node> Parser::read_logor_expr(){
-    CHECK_CPP();
-    CHECK_LEX();
-    auto node = read_logand_expr();
-    while (macro->next(DataStruct::AST_TYPE::OP_LOGOR))
-        node = ast_biop(DataStruct::AST_TYPE::OP_LOGOR, TYPE_INT, node, read_logand_expr());
-    return node;
 }
 //assignment-expression:
 //        conditional-expression:
@@ -2509,8 +2601,11 @@ std::shared_ptr<DataStruct::Node> Parser::read_compound_stmt(){
     scope[localenv]=orig;
     std::vector<DataStruct::Node> list ;
     for (;;) {
-        if (macro->next(lex->get_keywords("}")))
+        if (lex->is_keyword(macro->peek_token(),lex->get_keywords("}")))
+        {
+            macro->read_token();
             break;
+        }
         read_decl_or_stmt(list);
     }
     localenv = orig;
@@ -2881,4 +2976,16 @@ std::shared_ptr<DataStruct::Node> Parser::read_goto_stmt() {
     auto r = ast_goto(*tok.sval);
     gotos.push_back(r);
     return r;
+}
+
+std::shared_ptr<DataStruct::Node> Parser::var_lookup(const std::string& name){
+    auto level=localenv;
+    while (true){
+        for(auto&e:*level)
+            if (e.first==name)
+                return e.second;
+        if (scope.find(level)==scope.end())
+            return nullptr;
+        level=scope[level];
+    }
 }

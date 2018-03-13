@@ -179,15 +179,17 @@ namespace Test{
             if (id<startid) continue;
             Utils::_lex->add_file(Path::fullpath(path+s));
             Utils::_cpp->cpp_init();
-            DataStruct::Token tok=Utils::_cpp->read_token();
-            int format=0;
-            while (tok.kind!=DataStruct::TOKEN_TYPE::TEOF)
-            {
-                std::cout<<++format<<":"<<Utils::tok2s(tok)<<" ";
-                if (format%11==0) std::cout<<std::endl;
-                else std::cout<<std::flush;
-                tok=Utils::_cpp->read_token();
-            }
+            Utils::_parser->read_toplevels();
+//            DataStruct::Token tok=Utils::_cpp->read_token();
+//            int format=0;
+//            while (tok.kind!=DataStruct::TOKEN_TYPE::TEOF)
+//            {
+//                std::cout<<++format<<":"<<Utils::tok2s(tok)<<" ";
+//                if (format%11==0) std::cout<<std::endl;
+//                else std::cout<<std::flush;
+//                tok=Utils::_cpp->read_token();
+//            }
+            break;
         }
     }
     void parserAttrTest(const std::string&path){
@@ -205,14 +207,14 @@ namespace Test{
         }
         Utils::_lex->add_file(Path::fullpath(path));
         Utils::_cpp->cpp_init();
-//        DataStruct::Token tok = Utils::_cpp->read_token();
-//        int format = 0;
-//        while (tok.kind != DataStruct::TOKEN_TYPE::TEOF) {
-//            std::cout << ++format << ":" << Utils::tok2s(tok) << " ";
-//            if (format % 11 == 0) std::cout << std::endl;
-//            else std::cout << std::flush;
-//            tok = Utils::_cpp->read_token();
-//        }
-        Utils::_parser->read_toplevels();
+        DataStruct::Token tok = Utils::_cpp->read_token();
+        int format = 0;
+        while (tok.kind != DataStruct::TOKEN_TYPE::TEOF) {
+            std::cout << ++format << ":" << Utils::tok2s(tok) << " ";
+            if (format % 11 == 0) std::cout << std::endl;
+            else std::cout << std::flush;
+            tok = Utils::_cpp->read_token();
+        }
+//        Utils::_parser->read_toplevels();
     }
 }

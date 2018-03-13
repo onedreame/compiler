@@ -179,6 +179,7 @@ namespace DataStruct {
              bool oldstype):kind(k),rettype(ret),params(params),hasva(hasva),oldstyle(oldstype){}
         Type()= default;
         Type(const Type&)= default;
+        Type&operator=(const Type&)= default;
         DataStruct::TYPE_KIND kind;
         int size;
         int align;
