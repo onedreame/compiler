@@ -35,7 +35,7 @@ static void t6() {
         int val;
         struct tag *next;
     };
-    struct tag node1 = { 1, NULL };
+    struct tag node1 = { 1, 1 };
     struct tag node2 = { 2, &node1 };
     struct tag node3 = { 3, &node2 };
     struct tag *p = &node3;

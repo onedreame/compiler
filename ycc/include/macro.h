@@ -48,6 +48,12 @@ public:
         lex=_lex;
         parser=_parser;
     }
+    void iter_macros(){
+        static int count=1;
+        std::cout<<++count<<":";
+        for(auto&e:macros)
+            std::cout<<e.first<<std::endl;
+    }
 
 private:
     std::shared_ptr<Lex> lex= nullptr;

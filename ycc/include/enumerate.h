@@ -140,7 +140,7 @@ namespace DataStruct
         LOW='<',
         HIG='>',
         LEFT='%',
-        AST_PLACEHOLDER,
+        AST_PLACEHOLDER='\0',
     };
 
     enum class TYPE_KIND{

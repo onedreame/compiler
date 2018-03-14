@@ -546,9 +546,7 @@ bool Parser::is_type(const DataStruct::Token&tok){
 }
 //name是否是typedef定义的类型，是则返回定义的类型，否则返回nullptr
 std::shared_ptr<DataStruct::Type> Parser::get_typedef(const std::string&name){
-    std::shared_ptr<DataStruct::Node> node=nullptr;
-    if (env()->find(name)!=env()->end())
-        node=env()->at(name);
+    std::shared_ptr<DataStruct::Node> node=var_lookup(name);
     return (node && node->getKind() == DataStruct::AST_TYPE ::AST_TYPEDEF) ? node->getTy() : nullptr;
 }
 
@@ -595,6 +593,7 @@ int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, std::sha
         case DataStruct::AST_TYPE::MUL: return L * R;
         case DataStruct::AST_TYPE::DIV: return L / R;
         case DataStruct::AST_TYPE::LOW: return L < R;
+        case DataStruct::AST_TYPE::HIG: return L > R;
         case DataStruct::AST_TYPE::NOT: return L ^ R;
         case DataStruct::AST_TYPE::AND: return L & R;
         case DataStruct::AST_TYPE::OR: return L | R;
@@ -736,6 +735,8 @@ std::shared_ptr<std::vector<DataStruct::Node>> Parser::read_toplevels()
         else
             read_decl(toplevels.get(), true);
     }
+//###################################
+    macro->iter_macros();
 }
 
 DataStruct::Node Parser::read_funcdef() {
@@ -855,7 +856,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_float(const DataStruct::Token &to
 }
 //read int or float from tok.sval
 std::shared_ptr<DataStruct::Node> Parser::read_number(const DataStruct::Token &tok){
-    auto &s = *(tok.sval);
+    auto &s = *tok.sval;
     bool isfloat = strpbrk(&s[0], ".pP") || (lower(s).substr(0,2) !="0x"&& strpbrk(&s[0], "eE"));
     return isfloat ? read_float(tok) : read_int(tok);
 }
@@ -1521,8 +1522,13 @@ std::shared_ptr<DataStruct::Type> Parser::read_func_param_list(std::vector<DataS
         bool ellipsis;
         std::vector<DataStruct::Type> paramtypes ;
         read_declarator_params(paramtypes, param, ellipsis);
+        if(!lex->is_keyword(macro->peek_token(),lex->get_keywords(",")))
+            while (!lex->is_keyword(macro->peek_token(),lex->get_keywords(";"))
+                   &&!lex->is_keyword(macro->peek_token(),lex->get_keywords("{")))
+                macro->read_token();
         return make_func_type(rettype, paramtypes, ellipsis, false);
     }
+//    debugenv(0,localenv);
     if (!param)
         Error::errort(tok, "invalid function definition");
     read_declarator_params_oldstyle(param);
@@ -1806,7 +1812,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_var_or_func(const std::string &na
     CHECK_LEX();
     CHECK_CPP();
     std::shared_ptr<DataStruct::Node> v= var_lookup(name);
-    debugenv(0,localenv);
+//    debugenv(0,localenv);
     if (!v) {
         const DataStruct::Token &tok = macro->peek_token();
         if (!lex->is_keyword(tok, lex->get_keywords("(")))
@@ -2310,6 +2316,8 @@ std::shared_ptr<DataStruct::Node> Parser::read_assignment_expr(){
     if (lex->is_keyword(tok, lex->get_keywords("?")))
         return do_read_conditional_expr(node);
     auto cop = get_compound_assign_op(tok);
+    std::cout<<lex->is_keyword(tok, lex->get_keywords("="))<<std::endl;
+    std::cout<<(cop==DataStruct::AST_TYPE::AST_PLACEHOLDER)<<std::endl;
     if (lex->is_keyword(tok, lex->get_keywords("=")) || cop!=DataStruct::AST_TYPE::AST_PLACEHOLDER) {
         auto value = conv(read_assignment_expr());
         if (lex->is_keyword(tok, lex->get_keywords("=")) || cop!=DataStruct::AST_TYPE::AST_PLACEHOLDER)
@@ -2430,14 +2438,14 @@ void Parser::read_struct_initializer_sub(std::vector<std::shared_ptr<DataStruct:
     bool has_brace = maybe_read_brace();
     std::vector<std::string> keys;
     keys.reserve(ty->fields.size());
-    auto key_selector=[](decltype(ty->fields[0]) ele){ return ele.first;};
     auto find_key=[](decltype(ty->fields)& ele,const std::string&name)->std::shared_ptr<DataStruct::Type>{
         for (auto &e:ele)
             if (e.first==name)
                 return e.second;
         return nullptr;
     };
-    std::transform(ty->fields.begin(),ty->fields.end(),keys.begin(),key_selector);
+    for(auto&e:ty->fields)
+        keys.push_back(e.first);
     int i = 0;
     for (;;) {
         auto tok = macro->read_token();
@@ -2979,7 +2987,8 @@ std::shared_ptr<DataStruct::Node> Parser::read_goto_stmt() {
 }
 
 std::shared_ptr<DataStruct::Node> Parser::var_lookup(const std::string& name){
-    auto level=localenv;
+    auto level=env();
+
     while (true){
         for(auto&e:*level)
             if (e.first==name)

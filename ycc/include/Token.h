@@ -13,6 +13,7 @@
 #include <fstream>
 #include <memory>
 #include <unordered_map>
+#include <iostream>
 #include "enumerate.h"
 class MacroPreprocessor;
 namespace DataStruct {
@@ -89,11 +90,13 @@ namespace DataStruct {
             nargs=macro1.getNargs();
             is_varg=macro1.isIs_varg();
             fn=macro1.getFn();
+            body.clear();
             using itertype=decltype(macro1.getBody().begin());
             for (itertype beg=macro1.getBody().begin(),endg=macro1.getBody().end();beg!=endg;++beg)
                 body.push_back(std::move(*beg));
         }
         Macro(Macro&&macro1)noexcept :kind(macro1.getKind()),nargs(macro1.getNargs()),is_varg(macro1.isIs_varg()),fn(macro1.getFn()){
+            body.clear();
             using itertype=decltype(macro1.getBody().begin());
             for (itertype beg=macro1.getBody().begin(),endg=macro1.getBody().end();beg!=endg;++beg)
                 body.push_back(std::move(*beg));

@@ -40,23 +40,17 @@ public:
     std::shared_ptr<DataStruct::File> make_file_string(const std::string& s);
     int steam_depth(){ return files.size();}
     void stream_unstash();
+    void stream_stash(std::shared_ptr<DataStruct::File> fi);
     DataStruct::Token lex_string(std::string&);
     static std::shared_ptr<Lex> Instance();
     bool in_keyword(const DataStruct::Token& tok){ return keywords.find(*tok.sval)!=keywords.end();}
 
     void debug(){
-        for (int i = 0; i < stashed.size(); ++i) {
-            std::cout<<"####################"<<std::endl;
-            for (int j = 0; j < stashed[i].size(); ++j) {
-                char  c;
-                std::cout<<"当前文件为："<<stashed[i][j]->name<<std::endl;
-                while(!stashed[i][j]->file->eof())
-                {
-                    *(stashed[i][j]->file)>>c;
-                    std::cout<<c<<" ";
-                }
-                std::cout<<std::endl;
-            }
+        std::cout<<"________________"<<std::endl;
+        for (int i = 0; i < files.size(); ++i) {
+           std::cout<<"文件名："<<files[i]->name;
+           std::cout<<"\t行号："<<files[i]->line;
+            std::cout<<"\t列号："<<files[i]->column<<std::endl;
         }
     }
 private:
@@ -67,7 +61,7 @@ private:
     std::string filename;
 
     Pos cur;
-    std::vector<std::vector<DataStruct::Token>> buffers;
+    std::vector<std::vector<DataStruct::Token>> buffers{std::vector<DataStruct::Token>()};
 
     std::unordered_map<std::string,DataStruct::AST_TYPE> keywords;
     static std::unordered_map<int ,std::string> rkeywords;
@@ -98,7 +92,6 @@ private:
     int readc_string(std::shared_ptr<DataStruct::File> &);
     int readc();
     std::string pos_string(Pos p);
-    void stream_stash(std::shared_ptr<DataStruct::File> fi);
     Pos get_pos(int delta);
     DataStruct::Token make_token(DataStruct::Token tmpl);
     DataStruct::Token make_ident(std::string p);

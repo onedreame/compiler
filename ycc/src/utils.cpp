@@ -16,7 +16,7 @@ namespace Utils{
     std::string infile;
     std::string outfile;
     std::string asmfile;
-    std::string BUILD_DIR=".";
+    std::string BUILD_DIR="..";
     bool dumpast;
     bool cpponly;
     bool dumpasm;

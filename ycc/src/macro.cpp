@@ -40,7 +40,7 @@ void MacroPreprocessor::expect( DataStruct::AST_TYPE id) {
 }
 
 bool MacroPreprocessor::next(DataStruct::AST_TYPE id) {
-    DataStruct::Token tok = lex->lex();
+    DataStruct::Token tok = read_token();
     if (lex->is_keyword(tok, id))
         return true;
     lex->retreat_token(tok);
@@ -248,6 +248,7 @@ void MacroPreprocessor::unget_all(std::vector<DataStruct::Token >&tokens) {
 
 DataStruct::Token MacroPreprocessor::peek_token() {
     DataStruct::Token r=read_token();
+//    std::cout<<Utils::tok2s(r)<<std::endl;
     lex->retreat_token(r);
     return r;
 }
@@ -442,7 +443,7 @@ bool MacroPreprocessor::read_funclike_macro_params(const DataStruct::Token &name
         }
         if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
             Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
-        std::string arg = *(tok.sval);
+        std::string arg = *tok.sval;
         if (next(DataStruct::AST_TYPE::KELLIPSIS)) { //命名可变参数
             expect(lex->get_keywords(")"));
             param[arg] =make_macro_token(pos++, true);
@@ -595,7 +596,7 @@ void MacroPreprocessor::read_endif(const DataStruct::Token&hash)
     if (ci.include_guard.empty() || ci.file->name!= hash.file->name)
         return;
     DataStruct::Token last = skip_newlines();
-    if (ci.file->name != last.file->name)
+    if (!last.file||ci.file->name != last.file->name)
         include_guard[ci.file->name]= ci.include_guard;
 }
 std::string MacroPreprocessor::read_error_message() {
@@ -621,6 +622,8 @@ DataStruct::Token MacroPreprocessor::read_defined_op(){
     }
     if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
         Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+//##################################
+//    std::cout<<"search ";
     return macros.find(*tok.sval)!=macros.end() ? CPP_TOKEN_ONE : CPP_TOKEN_ZERO;
 }
 // C11 6.10.1.4
@@ -653,6 +656,13 @@ bool MacroPreprocessor::read_constexpr() {
     lex->token_buffer_stash(val);
     auto expr = parser->read_expr();
     auto tok = lex->lex();
+//#####################################################
+//    static int count=0;
+//    std::cout<<++count<<" ";
+//    for(auto&e:val)
+//        std::cout<<Utils::tok2s(e)<<" ";
+//    std::cout<<std::endl;
+
     if (tok.kind != DataStruct::TOKEN_TYPE::TEOF)
         Error::errort(tok, "stray token: %s", Utils::tok2s(tok));
     lex->token_buffer_unstash();
@@ -926,12 +936,13 @@ void MacroPreprocessor::add_include_path(const std::string &path) {
     std_include_path.push_back(path);
 }
 void MacroPreprocessor::init_path_and_macros() {
-//    vec_push(std_include_path, BUILD_DIR "/include");
+    std_include_path.emplace_back(Utils::BUILD_DIR +"/include");
     std_include_path.emplace_back("/usr/local/lib/ycc/include");
     std_include_path.emplace_back("/usr/local/include");
     std_include_path.emplace_back("/usr/include");
     std_include_path.emplace_back("/usr/include/linux");
     std_include_path.emplace_back("/usr/include/x86_64-linux-gnu");
+//    std_include_path.emplace_back("/usr/lib/gcc/x86_64-linux-gnu/5/include");
 
     macros["__DATE__"]=make_special_macro(handle_date_macro);
     macros["__TIME__"]=make_special_macro(handle_time_macro);
@@ -943,7 +954,10 @@ void MacroPreprocessor::init_path_and_macros() {
     macros["__INCLUDE_LEVEL__"]= make_special_macro(handle_include_level_macro);
     macros["__TIMESTAMP__"]=make_special_macro(handle_timestamp_macro);
     macros["__BASE_FILE__"]=make_special_macro(handle_base_file_macro);
-//    read_from_string(std::string("#include <")+ Utils::BUILD_DIR+std::string("/include/8cc.h>"));
+
+    read_from_string(std::string("#include \"")+ Utils::BUILD_DIR+std::string("/include/configuration.h\""));
+//    for(auto&e:macros)
+//        std::cout<<e.first<<std::endl;
 }
 
 void MacroPreprocessor::init_now() {
@@ -960,7 +974,7 @@ void MacroPreprocessor::cpp_init() {
 
 //解析一个字符串，适合处理一些宏
 void MacroPreprocessor::read_from_string(const std::string& s){
-    lex->stream_push(lex->make_file_string(s));
+    lex->stream_stash(lex->make_file_string(s));
     auto toplevels = parser->read_toplevels();
 //    for (auto &e:toplevels)
 //        emit_toplevel(e);
