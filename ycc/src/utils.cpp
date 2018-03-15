@@ -359,6 +359,9 @@ namespace Utils{
             case DataStruct::AST_TYPE::AST_LVAR:
                 buf_printf(b, "lv=%s", node->varname);
                 if (!node->lvarinit.empty()) {
+//                    std::vector<std::shared_ptr<DataStruct::Node>> v;
+//                    for(auto e:node->lvarinit)
+//                        v.push_back(std::make_shared<DataStruct::Node>(e));
                     b+= "(";
                     a2s_declinit(b, node->lvarinit);
                     b+= ")";

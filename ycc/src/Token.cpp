@@ -4,6 +4,8 @@
 
 #include "../include/Token.h"
 #include "../include/error.h"
+
+
 //DataStruct::Node& DataStruct::Node::copyUnion(const DataStruct::Node& r){
 //    if (r.tok!=tok){
 //        clear();
@@ -124,7 +126,6 @@
 //    sourceloc=t.getSourceloc();
 //    return copyUnion(t);
 //}
-
 long DataStruct::Node::getIval() const {
     return ival;
 }
@@ -155,6 +156,120 @@ const DataStruct::SourceLoc &DataStruct::Node::getSourceloc() const {
 
 void DataStruct::Node::setSourceloc(const DataStruct::SourceLoc &sourceloc) {
     Node::sourceloc = sourceloc;
+}
+//DataStruct::Node::Node(const Node&r){
+//    std::cout<<"Node copy"<<std::endl;
+//    //uanry操作
+//    this->unop=unop;
+//    // compound 语句
+//    this->stmts=stmts;
+//    // float or double
+//    this->fval=fval;
+//    this->flabel=flabel;
+//    // char int or long
+//    this->ival=ival;
+//    // return 语句
+//    this->retval=retval;
+//    // string
+//    this->sval=sval;
+//    this->slabel=slabel;
+//    // local/global 变量
+//    this->varname=varname;
+//    // local
+//    this->loff=loff;
+//    lvarinit;
+//    // global
+//    this->glabel=glabel;
+//    // binary op
+//    this->left=left;
+//    this->right=right;
+//    // 函数调用或声明
+//    this->fname=fname;
+//    // Function call
+//    this->args=args;
+//    this->ftype=ftype;
+//    // Function pointer or function designator
+//    this->fptr=fptr;
+//    // Function declaration
+//    this->params=params;
+//    this->localvars=localvars;
+//    this->body=body;
+//    // 声明
+//    this->declvar=declvar;
+//    this->declinit=declinit;
+//    // 初始化
+//    this->initval=initval;
+//    this->initoff=initoff;
+//    this->totype=totype;
+//    // if语句或ternary op
+//    this->cond=cond;
+//    this->then=then;
+//    this->els=els;
+//    // goto label
+//    this->label=label;
+//    this->newlabel=newlabel;
+//    // struct引用
+//    this->struc=struc;
+//    this->field=field;
+//    this->fieldtype=fieldtype;
+//}
+static int count=0;
+template <class T,class U>
+void format_print(U t){
+    std::cout<<"  ";
+    if (typeid(t)== typeid(std::shared_ptr<T>))
+        std::cout<<t.use_count();
+    else std::cout<<t;
+    std::cout<<std::endl;
+}
+void DataStruct::f(Node*thi) {
+    std::cout<<__LINE__<< " ";
+    std::cout<<"~node__________________________________"<<++count<<"\n";
+    std::cout<<STR(thi->unop);
+    format_print<Node>(thi->unop);
+    std::cout<<STR(thi->stmts);
+    for(auto&e:thi->stmts)
+        format_print<Node>(e);
+    if (thi->stmts.empty()) std::cout<<std::endl;
+    std::cout<<STR(thi->retval);
+    format_print<Node>(thi->retval);
+//    std::cout<<STR(thi->sval);
+//    format_print<std::string>(thi->sval);
+//    std::cout<<STR(thi->slabel);
+//    format_print<std::string>(thi->slabel);
+//    std::cout<<STR(thi->varname);
+//    format_print<std::string>(thi->varname);
+    std::cout<<"  lvarinit.size="<<thi->lvarinit.size()<<std::endl;
+    std::cout<<STR(thi->left);
+    format_print<Node>(thi->left);
+    std::cout<<STR(thi->right);
+    format_print<Node>(thi->right);
+    std::cout<<STR(thi->ftype);
+    format_print<Node>(thi->ftype);
+    std::cout<<STR(thi->fptr);
+    format_print<Node>(thi->fptr);
+    std::cout<<STR(thi->body);
+    format_print<Node>(thi->body);
+    std::cout<<STR(thi->declvar);
+    format_print<Node>(thi->declvar);
+    std::cout<<STR(thi->declinit);
+    for (auto& e:thi->declinit)
+        format_print<Node>(e);
+    if (thi->declinit.empty()) std::cout<<std::endl;
+    std::cout<<STR(thi->initval);
+    format_print<Node>(thi->initval);
+    std::cout<<STR(thi->totype);
+    format_print<Type>(thi->totype);
+    std::cout<<STR(thi->cond);
+    format_print<Node>(thi->cond);
+    std::cout<<STR(thi->then);
+    format_print<Node>(thi->then);
+    std::cout<<STR(thi->els);
+    format_print<Node>(thi->els);
+    std::cout<<STR(thi->struc);
+    format_print<Node>(thi->struc);
+    std::cout<<STR(thi->fieldtype);
+    format_print<Node>(thi->fieldtype);
 }
 
 //DataStruct::Node DataStruct::Node::make_CIL_node(long a)

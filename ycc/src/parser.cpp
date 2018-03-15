@@ -149,7 +149,7 @@ std::shared_ptr<DataStruct::Node> Parser::ast_gvar(const std::shared_ptr<DataStr
     return r;
 }
 /**
- * 构建一个int type
+ * 构建一个int type,kind为AST_LITERAL
  * @param ty 构建的int node的类型信息所保存的type
  * @param val 该type的值
  * @return 指向该int node的智能指针
@@ -473,7 +473,7 @@ std::shared_ptr<DataStruct::Node> Parser::ast_label_addr(const std::string &labe
     node->label=label;
     return node;
 }
-//local var,global var,struct ref, deref(???,what is this?)
+//local var,global var,struct ref, deref
 void Parser::ensure_lvalue(const std::shared_ptr<DataStruct::Node> &node){
     switch (node->getKind()) {
         case DataStruct::AST_TYPE::AST_LVAR: case DataStruct::AST_TYPE::AST_GVAR:
@@ -549,12 +549,23 @@ std::shared_ptr<DataStruct::Type> Parser::get_typedef(const std::string&name){
     std::shared_ptr<DataStruct::Node> node=var_lookup(name);
     return (node && node->getKind() == DataStruct::AST_TYPE ::AST_TYPEDEF) ? node->getTy() : nullptr;
 }
-
+/**
+ * 对struct成员变量的取地址，结果是取出它的偏移值
+ * @param node
+ * @param offset
+ * @return
+ */
 int Parser::eval_struct_ref(const std::shared_ptr<DataStruct::Node> &node, int offset) {
     if (node->getKind() == DataStruct::AST_TYPE::AST_STRUCT_REF)
         return eval_struct_ref(node->struc, node->getTy()->offset + offset);
     return eval_intexpr(node, nullptr) + offset;
 }
+/**
+ * 计算node的运算结果，返回整型数据，如果node的子节点中含有非整型类型，则报错
+ * @param node 要计算的节点
+ * @param addr 全局对象的地址，用于对全局对象的赋值
+ * @return int，表达式的结果
+ */
 int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, std::shared_ptr<DataStruct::Node> *addr) {
     switch (node->getKind()) {
         case DataStruct::AST_TYPE::AST_LITERAL:
@@ -565,16 +576,14 @@ int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, std::sha
         case DataStruct::AST_TYPE::NEG: return ~eval_intexpr(node->unop, addr);
         case DataStruct::AST_TYPE::OP_CAST: return eval_intexpr(node->unop, addr);
         case DataStruct::AST_TYPE::AST_CONV: return eval_intexpr(node->unop, addr);
-        case DataStruct::AST_TYPE::AST_ADDR:
+        case DataStruct::AST_TYPE::AST_ADDR:  //&var
             if (node->unop->getKind() == DataStruct::AST_TYPE::AST_STRUCT_REF)
                 return eval_struct_ref(node->unop, 0);
-            // fallthrough
         case DataStruct::AST_TYPE::AST_GVAR:
             if (addr) {
                 *addr = conv(node);
                 return 0;
             }
-            goto error;
             goto error;
         case DataStruct::AST_TYPE::AST_DEREF:
             if (node->unop->getTy()->kind == DataStruct::TYPE_KIND::KIND_PTR)
@@ -736,7 +745,7 @@ std::shared_ptr<std::vector<DataStruct::Node>> Parser::read_toplevels()
             read_decl(toplevels.get(), true);
     }
 //###################################
-    macro->iter_macros();
+//    macro->iter_macros();
 }
 
 DataStruct::Node Parser::read_funcdef() {
@@ -860,6 +869,38 @@ std::shared_ptr<DataStruct::Node> Parser::read_number(const DataStruct::Token &t
     bool isfloat = strpbrk(&s[0], ".pP") || (lower(s).substr(0,2) !="0x"&& strpbrk(&s[0], "eE"));
     return isfloat ? read_float(tok) : read_int(tok);
 }
+bool Parser::type_compatible(const std::shared_ptr<DataStruct::Type> &a, const std::shared_ptr<DataStruct::Type> &b){
+    if (a->kind == DataStruct::TYPE_KIND::KIND_STRUCT)
+        return is_same_struct(a, b);
+    if (a->kind != b->kind)
+        return false;
+    if (a->ptr && b->ptr)
+        return type_compatible(a->ptr, b->ptr);
+    if (is_arithtype(a) && is_arithtype(b))
+        return same_arith_type(a, b);
+    return true;
+}
+
+std::vector<std::pair<std::shared_ptr<DataStruct::Type>,std::shared_ptr<DataStruct::Node>>> Parser::read_generic_list(std::shared_ptr<DataStruct::Node> &defaultexpr) {
+    std::vector<std::pair<std::shared_ptr<DataStruct::Type>,std::shared_ptr<DataStruct::Node>>> r;
+    for (;;) {
+        if (macro->next(lex->get_keywords(")")))
+            return r;
+        auto tok = macro->peek_token();
+        if (macro->next(lex->get_keywords("default"))) {
+            if (defaultexpr)
+                Error::errort(tok, "default expression specified twice");
+            macro->expect(lex->get_keywords(":"));
+            defaultexpr = read_assignment_expr();
+        } else {
+            auto ty = read_cast_type();
+            macro->expect(lex->get_keywords(":"));
+            auto expr = read_assignment_expr();
+            r.push_back(std::make_pair(ty,expr));
+        }
+        macro->next(lex->get_keywords(","));
+    }
+}
 std::shared_ptr<DataStruct::Node> Parser::read_generic(){
     CHECK_CPP();
     CHECK_LEX();
@@ -868,20 +909,20 @@ std::shared_ptr<DataStruct::Node> Parser::read_generic(){
     auto contexpr = read_assignment_expr();
     macro->expect(lex->get_keywords(","));
     decltype(contexpr) defaultexpr = nullptr;
-//    Vector *list = read_generic_list(&defaultexpr);
-//    for (int i = 0; i < vec_len(list); i++) {
-//        void **pair = vec_get(list, i);
-//        Type *ty = pair[0];
-//        Node *expr = pair[1];
-//        if (type_compatible(contexpr->ty, ty))
-//            return expr;
-//    }
+    auto list = read_generic_list(defaultexpr);
+    for (auto beg=list.cbegin();beg!=list.cend();++beg) {
+
+        auto ty = beg->first;
+        auto expr = beg->second;
+        if (type_compatible(contexpr->getTy(), ty))
+            return expr;
+    }
     if (!defaultexpr)
         Error::errort(tok, "no matching generic selection for %s: %s", Utils::node2s(contexpr), Utils::ty2s(contexpr->getTy()));
     return defaultexpr;
 }
 std::vector<std::shared_ptr<DataStruct::Node>> Parser::read_func_args(const std::vector<std::shared_ptr<DataStruct::Type>> &params) {
-//    Vector *args = make_vector();
+
     CHECK_CPP();
     CHECK_LEX();
     std::vector<std::shared_ptr<DataStruct::Node>> args;
@@ -909,13 +950,13 @@ std::vector<std::shared_ptr<DataStruct::Node>> Parser::read_func_args(const std:
     return args;
 }
 
-std::shared_ptr<DataStruct::Node> Parser::read_funcall(std::shared_ptr<DataStruct::Node> &fp) {
+std::shared_ptr<DataStruct::Node> Parser::read_funcall(std::shared_ptr<DataStruct::Node> fp) {
     if (fp->getKind() == DataStruct::AST_TYPE::AST_ADDR && fp->unop->getKind() == DataStruct::AST_TYPE::AST_FUNCDESG) {
         auto desg = fp->unop;
         auto args = read_func_args(desg->getTy()->params);
         std::vector<DataStruct::Node> margs;
         for (auto&e:args)
-            margs.emplace_back(*e);
+            margs.push_back(*e);
         return ast_funcall(desg->getTy(), desg->fname, margs);
     }
     auto args = read_func_args(fp->getTy()->ptr->params);
@@ -935,7 +976,7 @@ void Parser::read_static_assert(){
     macro->expect(lex->get_keywords(")"));
     macro->expect(lex->get_keywords(";"));
     if (!val)
-        Error::errort(tok, "_Static_assert failure: %s", *(tok.sval));
+        Error::errort(tok, "_Static_assert failure: %s", *tok.sval);
 }
 //create static local var, may be initialized if has a following "=", staitc var should be put into global
 void Parser::read_static_local_var(const std::shared_ptr<DataStruct::Type>& ty, const std::string& name){
@@ -1191,7 +1232,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_enum_def(){
         if (macro->next(lex->get_keywords("=")))
             val = read_intexpr();
         std::shared_ptr<DataStruct::Node> constval = ast_inttype(TYPE_INT, val++);
-        //这里也是c++11新增强枚举类型的原因之一
+        //这里也是c++11新增强枚举类型的原因之一,enum变量会污染当前作用域
         env()->emplace(std::make_pair(name,constval));
         if (macro->next(lex->get_keywords(",")))
             continue;
@@ -1443,7 +1484,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_declarator(std::string *name,cons
         std::shared_ptr<DataStruct::Type> stub = std::make_shared<DataStruct::Type>(DataStruct::TYPE_KIND::KIND_PLACEHOLDER,0);
         std::shared_ptr<DataStruct::Type> t = read_declarator(name, stub, params, type);  //过滤掉第一个括号内的内容并提取出函数指针
         macro->expect(lex->get_keywords(")"));
-        stub = read_declarator_tail(basetype, params);
+        *stub = *read_declarator_tail(basetype, params);
         return t;
     }
     //C11 6.7.6.1 Pointer Declarators
@@ -1522,7 +1563,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_func_param_list(std::vector<DataS
         bool ellipsis;
         std::vector<DataStruct::Type> paramtypes ;
         read_declarator_params(paramtypes, param, ellipsis);
-        if(!lex->is_keyword(macro->peek_token(),lex->get_keywords(",")))
+        if(!lex->is_keyword(macro->peek_token(),lex->get_keywords(","))&&!lex->is_keyword(macro->peek_token(),lex->get_keywords(")")))
             while (!lex->is_keyword(macro->peek_token(),lex->get_keywords(";"))
                    &&!lex->is_keyword(macro->peek_token(),lex->get_keywords("{")))
                 macro->read_token();
@@ -1690,19 +1731,25 @@ bool Parser::is_same_struct(const std::shared_ptr<DataStruct::Type> &a, const st
         case DataStruct::TYPE_KIND::KIND_STRUCT: {
             if (a->is_struct != b->is_struct)
                 return false;
-            auto key_selector=[](decltype(a->fields[0]) & ele){ return ele.second;};
+//            auto key_selector=[](decltype(a->fields[0]) & ele){ return ele.second;};
 //            Vector *ka = dict_keys(a->fields);
 //            Vector *kb = dict_keys(b->fields);
-            std::vector<decltype(a->fields[0].second)> ka;
-            std::vector<decltype(a->fields[0].second)> kb;
-            ka.reserve(a->fields.size());
-            kb.reserve(b->fields.size());
-            std::transform(a->fields.begin(),a->fields.end(),ka.begin(),key_selector);
-            std::transform(b->fields.begin(),b->fields.end(),kb.begin(),key_selector);
-            if (ka.size() != kb.size())
+//            std::vector<decltype(a->fields[0].second)> ka;
+//            std::vector<decltype(a->fields[0].second)> kb;
+//            ka.reserve(a->fields.size());
+//            kb.reserve(b->fields.size());
+//            std::transform(a->fields.begin(),a->fields.end(),ka.begin(),key_selector);
+//            std::transform(b->fields.begin(),b->fields.end(),kb.begin(),key_selector);
+//            if (ka.size() != kb.size())
+//                return false;
+//            for (int i = 0; i < ka.size(); i++)
+//                if (!is_same_struct(ka[i], kb[i]))
+//                    return false;
+            if(a->fields.size()!=b->fields.size())
                 return false;
-            for (int i = 0; i < ka.size(); i++)
-                if (!is_same_struct(ka[i], kb[i]))
+            for (auto abeg=a->fields.cbegin(),bbeg=b->fields.cbegin();abeg!=a->fields.cend();
+                    ++abeg,++bbeg)
+                if (!is_same_struct(abeg->second,bbeg->second))
                     return false;
             return true;
         }
@@ -2063,6 +2110,8 @@ std::shared_ptr<DataStruct::Node> Parser::read_unary_expr(){
     lex->retreat_token(tok);
     return read_postfix_expr();
 }
+//sizeof unary-expression
+//sizeof ( type-name )
 std::shared_ptr<DataStruct::Node> Parser::read_sizeof_operand() {
     auto ty = read_sizeof_operand_sub();
     // Sizeof on void or function type is GNU extension
@@ -2095,6 +2144,9 @@ std::shared_ptr<DataStruct::Node> Parser::read_compound_literal(const std::share
     auto name = make_label();
     auto init = read_decl_init(ty);
     auto r = ast_lvar(ty, name);
+//    r->lvarinit.clear();
+//    for(auto e:init)
+//        r->lvarinit.push_back(*e);
     r->lvarinit = init;
     return r;
 }
@@ -2316,8 +2368,6 @@ std::shared_ptr<DataStruct::Node> Parser::read_assignment_expr(){
     if (lex->is_keyword(tok, lex->get_keywords("?")))
         return do_read_conditional_expr(node);
     auto cop = get_compound_assign_op(tok);
-    std::cout<<lex->is_keyword(tok, lex->get_keywords("="))<<std::endl;
-    std::cout<<(cop==DataStruct::AST_TYPE::AST_PLACEHOLDER)<<std::endl;
     if (lex->is_keyword(tok, lex->get_keywords("=")) || cop!=DataStruct::AST_TYPE::AST_PLACEHOLDER) {
         auto value = conv(read_assignment_expr());
         if (lex->is_keyword(tok, lex->get_keywords("=")) || cop!=DataStruct::AST_TYPE::AST_PLACEHOLDER)
@@ -2729,7 +2779,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_label_tail(const std::shared_ptr<
  */
 std::shared_ptr<DataStruct::Node> Parser::read_case_label(const DataStruct::Token &tok) {
     CHECK_LEX();CHECK_CPP();
-    if (cases.empty())
+    if (!cases)
         Error::errort(tok, "stray case label");
     auto label = make_label();
     int beg = read_intexpr();
@@ -2738,10 +2788,10 @@ std::shared_ptr<DataStruct::Node> Parser::read_case_label(const DataStruct::Toke
         macro->expect(lex->get_keywords(":"));
         if (beg > end)
             Error::errort(tok, "case region is not in correct order: %d ... %d", beg, end);
-        cases.emplace_back(make_case(beg, end, label));
+        cases->emplace_back(make_case(beg, end, label));
     } else {
         macro->expect(lex->get_keywords(":"));
-        cases.emplace_back(make_case(beg, beg, label));
+        cases->emplace_back(make_case(beg, beg, label));
     }
     check_case_duplicates();
     return read_label_tail(ast_dest(label));
@@ -2755,8 +2805,8 @@ std::shared_ptr<DataStruct::Node> Parser::read_default_label(const DataStruct::T
     return read_label_tail(ast_dest(defaultcase));
 }
 void Parser::check_case_duplicates(){
-    const Case &x = cases.back();
-    for(auto beg=cases.cbegin(),end=--(cases.cend());beg!=end;++beg) {
+    const Case &x = cases->back();
+    for(auto beg=cases->cbegin(),end=--(cases->cend());beg!=end;++beg) {
         if (x.end < beg->beg || beg->end < x.beg)
             continue;
         if (x.beg == x.end)
@@ -2920,14 +2970,14 @@ std::shared_ptr<DataStruct::Node> Parser::read_switch_stmt(){
     auto ocases = cases;
     auto odefaultcase = defaultcase;
     auto obreak = lbreak;
-    cases.clear();
+    cases=std::make_shared<std::vector<Case>>();
     defaultcase = "";
     lbreak = end;
     auto body = read_stmt();
     std::vector<std::shared_ptr<DataStruct::Node>> v;
     auto var = ast_lvar(expr->getTy(), make_tempname());
     v.emplace_back(ast_biop(lex->get_keywords("="), expr->getTy(), var, expr));
-    for (auto&e:cases)
+    for (auto&e:*cases)
         v.emplace_back(make_switch_jump(var, e));
     v.emplace_back(ast_jump(!defaultcase.empty() ? defaultcase : end));
     if (body)
@@ -2950,7 +3000,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_continue_stmt(const DataStruct::T
     CHECK_LEX();
     CHECK_CPP();
     macro->expect(lex->get_keywords(";"));
-    if (!lcontinue.empty())
+    if (lcontinue.empty())
         Error::errort(tok, "stray continue statement");
     return ast_jump(lcontinue);
 }

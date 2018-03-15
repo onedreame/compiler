@@ -85,7 +85,7 @@ float ptrtest3(float a) {
     return a * 2;
 }
 
-int ptrtest4(int (f)(int), int x) {
+int ptrtest4(int (*f)(int), int x) {
     return f(x);
 }
 

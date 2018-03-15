@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <iostream>
 #include "enumerate.h"
+
 class MacroPreprocessor;
 namespace DataStruct {
     struct File{
@@ -200,14 +201,16 @@ namespace DataStruct {
         bool hasva;
         bool oldstyle;
     };
-
+    void f(Node*);
     class Node{
     public:
 
         Node():tok(NODETYPE::CIL),ival(0){}
+//        Node(const Node&r)= default;
         Node(const Node&r)= default;
         Node&operator=(const Node&)= default;
         Node(AST_TYPE k,const std::shared_ptr<Type>&ty, const SourceLoc& sor):kind(k),ty(ty),sourceloc(sor){}
+//        ~Node(){f(this);}
 //        ~Node(){clear();}
 //        static Node make_CIL_node(long);
 //        static Node make_FD_node(double, const std::string&);
@@ -327,6 +330,7 @@ namespace DataStruct {
 //        Node& copyUnion(const Node& r);
 //        void clear();
     };
+
 }
 #endif //YCC_TOKEN_H
 

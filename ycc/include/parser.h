@@ -70,7 +70,7 @@ private:
     std::shared_ptr<std::vector<DataStruct::Node>> toplevels=std::make_shared<std::vector<DataStruct::Node>>();
     std::shared_ptr<std::vector<DataStruct::Node>> localvars= nullptr;
     std::vector<std::shared_ptr<DataStruct::Node>> gotos;
-    std::vector<Case> cases;
+    std::shared_ptr<std::vector<Case>> cases;
     std::shared_ptr<DataStruct::Type> current_func_type;
 
     std::string defaultcase;
@@ -192,10 +192,11 @@ private:
 
     //_Generic
     bool type_compatible(const std::shared_ptr<DataStruct::Type> &a, const std::shared_ptr<DataStruct::Type> &b);
+    std::vector<std::pair<std::shared_ptr<DataStruct::Type>,std::shared_ptr<DataStruct::Node>>> read_generic_list(std::shared_ptr<DataStruct::Node> &defaultexpr);
     std::shared_ptr<DataStruct::Node> read_generic();
-//    Vector *read_generic_list(Node **defaultexpr);
+
     std::vector<std::shared_ptr<DataStruct::Node>> read_func_args(const std::vector<std::shared_ptr<DataStruct::Type>> &params);
-    std::shared_ptr<DataStruct::Node> read_funcall(std::shared_ptr<DataStruct::Node> &fp);
+    std::shared_ptr<DataStruct::Node> read_funcall(std::shared_ptr<DataStruct::Node> fp);
     void read_static_assert();
     std::shared_ptr<DataStruct::Type> get_typedef(const std::string&);
     std::shared_ptr<DataStruct::Type> read_typeof();

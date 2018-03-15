@@ -50,8 +50,8 @@ int main(int argc, char**argv) {
     std::cout<<"argc:"<<argc<<std::endl;
     for(int i=0;i<argc;++i)
         std::cout<<argv[i]<<std::endl;
-    Test::parserTest("../test/",std::stoi(argv[argc-1]));
-//    Test::parserAttrTest(argv[1]);
+//    Test::parserTest("../test/",std::stoi(argv[argc-1]));
+    Test::parserAttrTest(argv[1]);
     return 0;
 }
 
