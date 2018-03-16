@@ -63,7 +63,7 @@ namespace Error{
         Print_error("%s: %s\n",std::forward<T>(line),std::forward<U>(pos));
         Print_error(fmt,args...);
         std::cerr<<std::endl;
-        exit(-1);
+        quick_exit(-1);
     }
 
     template <typename T,typename U,typename... Args>
@@ -76,7 +76,7 @@ namespace Error{
         Print_error("%s: %s\n",line,pos);
         Print_error(fmt,args...);
         if (warning_is_error)
-            exit(1);
+            quick_exit(1);
     }
 //    template <class T,class...Args>
 //    void errorp(const T& src,Args... args)

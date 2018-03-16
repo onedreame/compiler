@@ -4,13 +4,12 @@
 
 #include "funcTest.h"
 #include "../include/path.h"
-#include <string>
-#include <unistd.h>
 #include <dirent.h>
 #include <cstring>
 #include <fstream>
 #include <unordered_set>
 #include "../include/utils.h"
+#include "../include/code_gen.h"
 
 namespace Test{
     void lexTokenTest(std::string path){
@@ -217,5 +216,37 @@ namespace Test{
 //            tok = Utils::_cpp->read_token();
 //        }
         Utils::_parser->read_toplevels();
+    }
+    void formatfile(const std::string&path,const std::string&content){
+        std::ofstream ofs(path);
+        if (!ofs)
+            perror("无法创建要写的文件");
+        std::cout<<"读取文件中...\n";
+        for(auto beg=content.cbegin();beg!=content.cend();++beg)
+            ofs<<*beg;
+        ofs<<"\n";
+        for(auto beg=content.cbegin();beg!=content.cend();++beg){
+            if (*beg=='%')
+                if (*++beg=='%'){
+                    ofs<<*beg;
+                    continue;
+                }
+                else --beg;
+            else ofs<<*beg;
+        }
+        ofs.close();
+    }
+    void cformatfile(char *name,char *fmt,...){
+        FILE *f=fopen(name,"w");
+        va_list args;
+        va_start(args, fmt);
+        int cur=vfprintf(f,fmt,args);
+        std::cout<<cur<<std::endl;
+        va_end(args);
+    }
+    void emittest(){
+        auto it=CodeGen::Instance();
+        it->set_output_file("emittest.c");
+        it->emitf(0,"#include<%%>\nxx#..%%..%%..#%%,%%,%d%",1);
     }
 }

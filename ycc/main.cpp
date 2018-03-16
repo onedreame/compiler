@@ -51,7 +51,10 @@ int main(int argc, char**argv) {
     for(int i=0;i<argc;++i)
         std::cout<<argv[i]<<std::endl;
 //    Test::parserTest("../test/",std::stoi(argv[argc-1]));
-    Test::parserAttrTest(argv[1]);
+//    Test::parserAttrTest(argv[1]);
+    Test::formatfile("test.c","#include<%%>\nxx");
+    Test::cformatfile("ctest.c","\t","hahah");
+    Test::emittest();
     return 0;
 }
 

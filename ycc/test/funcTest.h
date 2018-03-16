@@ -14,5 +14,8 @@ namespace Test{
     void NodeTest();
     void parserTest(const std::string&,int);
     void parserAttrTest(const std::string&path);
+    void formatfile(const std::string&path,const std::string&content);
+    void cformatfile(char *name,char *fmt,...);
+    void emittest();
 }
 #endif //YCC_FUNCTEST_H
