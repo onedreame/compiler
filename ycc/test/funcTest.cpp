@@ -159,11 +159,12 @@ namespace Test{
 //        node=DataStruct::Node::make_UNOP_node(std::make_shared<DataStruct::Node>());
     }
     void parserTest(const std::string&path,int startid){
-        Utils::_lex=Lex::Instance();
-        Utils::_cpp=MacroPreprocessor::Instance();
-        Utils::_parser=Parser::Instance();
-        Utils::_cpp->set_depency(Utils::_lex,Utils::_parser);
-        Utils::_parser->set_depency(Utils::_cpp,Utils::_lex);
+        auto _lex=Lex::Instance();
+        auto _cpp=MacroPreprocessor::Instance();
+        auto _parser=Parser::Instance();
+
+        _cpp->set_depency(_lex,_parser);
+        _parser->set_depency(_cpp,_lex);
         int id=-1;
         bool isflush= false;
         std::ifstream ifs("../testFilename.txt");
@@ -177,9 +178,9 @@ namespace Test{
             std::cout<<std::endl;
             id++;
             if (id<startid) continue;
-            Utils::_cpp->cpp_init();
-            Utils::_lex->add_file(Path::fullpath(path+s));
-            Utils::_parser->read_toplevels();
+            _cpp->cpp_init();
+            _lex->add_file(Path::fullpath(path+s));
+            _parser->read_toplevels();
 //            DataStruct::Token tok=Utils::_cpp->read_token();
 //            int format=0;
 //            while (tok.kind!=DataStruct::TOKEN_TYPE::TEOF)
@@ -193,11 +194,11 @@ namespace Test{
         }
     }
     void parserAttrTest(const std::string&path){
-        Utils::_lex=Lex::Instance();
-        Utils::_cpp=MacroPreprocessor::Instance();
-        Utils::_parser=Parser::Instance();
-        Utils::_cpp->set_depency(Utils::_lex,Utils::_parser);
-        Utils::_parser->set_depency(Utils::_cpp,Utils::_lex);
+        auto _lex=Lex::Instance();
+        auto _cpp=MacroPreprocessor::Instance();
+        auto _parser=Parser::Instance();
+        _cpp->set_depency(_lex,_parser);
+        _parser->set_depency(_cpp,_lex);
         int id=-1;
         bool isflush= false;
         std::ifstream ifs(path);
@@ -205,8 +206,8 @@ namespace Test{
             perror("无法创新要写的文件...");
             exit(1);
         }
-        Utils::_cpp->cpp_init();
-        Utils::_lex->add_file(Path::fullpath(path));
+        _cpp->cpp_init();
+        _lex->add_file(Path::fullpath(path));
 //        DataStruct::Token tok = Utils::_cpp->read_token();
 //        int format = 0;
 //        while (tok.kind != DataStruct::TOKEN_TYPE::TEOF) {
@@ -215,7 +216,8 @@ namespace Test{
 //            else std::cout << std::flush;
 //            tok = Utils::_cpp->read_token();
 //        }
-        Utils::_parser->read_toplevels();
+        _parser->read_toplevels();
+
     }
     void formatfile(const std::string&path,const std::string&content){
         std::ofstream ofs(path);
@@ -246,7 +248,7 @@ namespace Test{
     }
     void emittest(){
         auto it=CodeGen::Instance();
-        it->set_output_file("emittest.c");
+//        it->set_output_file("emittest.c");
         it->emitf(0,"#include<%%>\nxx#..%%..%%..#%%,%%,%d%",1);
     }
 }

@@ -1,17 +1,47 @@
 #include <iostream>
 #include "include/Token.h"
-#include "include/error.h"
 #include "include/buffer.h"
 #include "include/Lex.h"
 #include "test/funcTest.h"
+#include "include/utils.h"
+#define __GUNC__
 
-using namespace Error;
-void ifstreamTest(std::string filename);
-//void FileTest();
-void sharedIoTest();
-void warnpTest();
+//using namespace Error;
+//void ifstreamTest(std::string filename);
+////void FileTest();
+//void sharedIoTest();
+//void warnpTest();
+class T{
+public:
+    static int a;
+    class A{
+    public:
 
+        void f(){std::cout<<"A->F"<<a<<std::endl;}
+//        void f1(){std::cout<<"A->F1"<<b<<std::endl;}
+    };
+
+
+private:
+    int b=2;
+    class B{
+    public:
+
+        void f(){std::cout<<"A->F"<<a<<std::endl;}
+//        void f1(){std::cout<<"A->F1"<<b<<std::endl;}
+    };
+};
+int T::a=1;
+namespace Utils{
+    std::shared_ptr<Lex> _lex= nullptr;
+    std::shared_ptr<MacroPreprocessor> _cpp= nullptr;
+    std::shared_ptr<Parser> _parser= nullptr;
+    std::shared_ptr<CodeGen> _codegen= nullptr;
+}
 int main(int argc, char**argv) {
+    T::A a;
+    a.f();
+//    a.f1();
 //    DataStruct::File fi;
 //    DataStruct::Token t;
 //    std::cout << "Hello, World!" << std::endl;
@@ -47,77 +77,78 @@ int main(int argc, char**argv) {
 //    Test::macroExpandTest("../test/",0);
 //    Test::NodeTest();
 //    Utils::ycc_setup_and_work(argc,argv);
-    std::cout<<"argc:"<<argc<<std::endl;
-    for(int i=0;i<argc;++i)
-        std::cout<<argv[i]<<std::endl;
-//    Test::parserTest("../test/",std::stoi(argv[argc-1]));
-//    Test::parserAttrTest(argv[1]);
-    Test::formatfile("test.c","#include<%%>\nxx");
-    Test::cformatfile("ctest.c","\t","hahah");
-    Test::emittest();
+//    std::cout<<"argc:"<<argc<<std::endl;
+//    for(int i=0;i<argc;++i)
+//        std::cout<<argv[i]<<std::endl;
+////    Test::parserTest("../test/",std::stoi(argv[argc-1]));
+////    Test::parserAttrTest(argv[1]);
+//    Test::formatfile("test.c","#include<%%>\nxx");
+//    Test::cformatfile("ctest.c","\t","hahah");
+//    Test::emittest();
+    Utils::ycc_setup_and_work(argc,argv);
     return 0;
 }
-
-void ifstreamTest(std::string filename)
-{
-    std::ifstream ifs(filename);
-    if (!ifs)
-    {
-        std::cerr<<"无法打开文件"<<std::endl;
-        return;
-    }
-    auto p=ifs.tellg();
-    std::cout<<"初始pos："<<p<<std::endl;
-    char c;
-    ifs>>c;
-    std::cout<<"初始字符："<<c<<std::endl;
-    std::cout<<"读取一个字符以后的文件指针："<<ifs.tellg()<<std::endl;
-    ifs.seekg(-1,std::ios::cur);
-    std::cout<<"设置-1以后的文件指针："<<ifs.tellg()<<std::endl;
-    ifs>>c;
-    std::cout<<"此时的字符为:"<<c<<std::endl;
-    int p1=1;
-    int c1;
-    while(!ifs.eof()||p1<3)
-    {
-        ifs>>c;
-        if (ifs.eof()) ++p1;
-        std::cout<<c<<std::endl;
-    }
-    ifs.close();
-    ifs.open("/tmp/test");
-    std::cout<<std::endl<<"测试是否有多余字符输出"<<std::endl;
-    while(!ifs.eof()){
-        ifs>>c;
-        std::cout<<c<<" ";
-    }
-    std::cout<<std::endl;
-}
-//void FileTest()
+//
+//void ifstreamTest(std::string filename)
 //{
-//    std::string s1="/tmp/test";
-//    std::string s2="/tmp/test1";
-//    std::string s3="/tmp/test2";
-//    Lex lex;
-//    lex.open_file(s1);
-//    lex.stash_push();
-//    lex.debug();
-//    lex.open_file(s2);
-//    lex.stash_push();
-//    lex.debug();
-//    lex.stash_pop();
-//    lex.debug();
+//    std::ifstream ifs(filename);
+//    if (!ifs)
+//    {
+//        std::cerr<<"无法打开文件"<<std::endl;
+//        return;
+//    }
+//    auto p=ifs.tellg();
+//    std::cout<<"初始pos："<<p<<std::endl;
+//    char c;
+//    ifs>>c;
+//    std::cout<<"初始字符："<<c<<std::endl;
+//    std::cout<<"读取一个字符以后的文件指针："<<ifs.tellg()<<std::endl;
+//    ifs.seekg(-1,std::ios::cur);
+//    std::cout<<"设置-1以后的文件指针："<<ifs.tellg()<<std::endl;
+//    ifs>>c;
+//    std::cout<<"此时的字符为:"<<c<<std::endl;
+//    int p1=1;
+//    int c1;
+//    while(!ifs.eof()||p1<3)
+//    {
+//        ifs>>c;
+//        if (ifs.eof()) ++p1;
+//        std::cout<<c<<std::endl;
+//    }
+//    ifs.close();
+//    ifs.open("/tmp/test");
+//    std::cout<<std::endl<<"测试是否有多余字符输出"<<std::endl;
+//    while(!ifs.eof()){
+//        ifs>>c;
+//        std::cout<<c<<" ";
+//    }
+//    std::cout<<std::endl;
 //}
-
-void sharedIoTest()
-{
-    std::shared_ptr<std::ifstream> p=std::make_shared<std::ifstream>("/tmp/test");
-    std::shared_ptr<std::ifstream> q=p;
-    std::cout<<"p的文件位置为"<<p->tellg()<<std::endl;
-    std::cout<<"复制品q的文件位置为"<<q->tellg()<<std::endl;
-    char c;
-    *p>>c;
-    std::cout<<"输出一个字符以后"<<std::endl;
-    std::cout<<"p的文件位置为"<<p->tellg()<<std::endl;
-    std::cout<<"复制品q的文件位置为"<<q->tellg()<<std::endl;
-}
+////void FileTest()
+////{
+////    std::string s1="/tmp/test";
+////    std::string s2="/tmp/test1";
+////    std::string s3="/tmp/test2";
+////    Lex lex;
+////    lex.open_file(s1);
+////    lex.stash_push();
+////    lex.debug();
+////    lex.open_file(s2);
+////    lex.stash_push();
+////    lex.debug();
+////    lex.stash_pop();
+////    lex.debug();
+////}
+//
+//void sharedIoTest()
+//{
+//    std::shared_ptr<std::ifstream> p=std::make_shared<std::ifstream>("/tmp/test");
+//    std::shared_ptr<std::ifstream> q=p;
+//    std::cout<<"p的文件位置为"<<p->tellg()<<std::endl;
+//    std::cout<<"复制品q的文件位置为"<<q->tellg()<<std::endl;
+//    char c;
+//    *p>>c;
+//    std::cout<<"输出一个字符以后"<<std::endl;
+//    std::cout<<"p的文件位置为"<<p->tellg()<<std::endl;
+//    std::cout<<"复制品q的文件位置为"<<q->tellg()<<std::endl;
+//}

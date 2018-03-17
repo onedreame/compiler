@@ -325,7 +325,7 @@ namespace DataStruct {
     private:
         AST_TYPE kind;
         std::shared_ptr<Type> ty;
-        SourceLoc sourceloc;
+        SourceLoc sourceloc{"",-1};
         NODETYPE tok;
 //        Node& copyUnion(const Node& r);
 //        void clear();

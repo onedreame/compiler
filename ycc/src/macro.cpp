@@ -36,7 +36,7 @@ DataStruct::Token MacroPreprocessor::copy_token(const DataStruct::Token& tok) co
 void MacroPreprocessor::expect( DataStruct::AST_TYPE id) {
     DataStruct::Token tok = lex->lex();
     if (!lex->is_keyword(tok, id))
-        Error::errort(tok, "%c expected, but got %s", Lex::get_keywords_string(id), Utils::tok2s(tok));
+        Error::errort(tok, "%c expected, but got %s", Lex::get_keywords_string(id), lex->tok2s(tok));
 }
 
 bool MacroPreprocessor::next(DataStruct::AST_TYPE id) {
@@ -58,14 +58,14 @@ void MacroPreprocessor::propagate_space(std::vector<DataStruct::Token >&tokens, 
 DataStruct::Token MacroPreprocessor::read_ident() {
     DataStruct::Token tok = lex->lex();
     if (tok.kind != DataStruct::TOKEN_TYPE ::TIDENT)
-        Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
     return tok;
 }
 
 void MacroPreprocessor::expect_newline() {
     DataStruct::Token tok = lex->lex();
     if (tok.kind != DataStruct::TOKEN_TYPE ::TNEWLINE)
-        Error::errort(tok, "newline expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "newline expected, but got %s", lex->tok2s(tok));
 }
 
 DataStruct::Token MacroPreprocessor::read_expand_newline() {
@@ -148,7 +148,7 @@ DataStruct::Token MacroPreprocessor::stringize(const DataStruct::Token &tmpl, st
 //        is deleted.(前导空格和后置空格在read_one_arg中已经得到消除。）
         if (!b.empty() && tok.space)
             b+=" ";
-        b+=Utils::format("%s",Utils::tok2s(tok));
+        b+=Utils::format("%s",lex->tok2s(tok));
     }
     DataStruct::Token r = copy_token(tmpl);
     r.kind = DataStruct::TOKEN_TYPE::TSTRING;
@@ -275,7 +275,7 @@ DataStruct::Token MacroPreprocessor::read_token() {
             {
                 DataStruct::ENCODE enc2=tok.enc;
                 if (enc!=DataStruct::ENCODE::ENC_NONE&&enc2!=DataStruct::ENCODE::ENC_NONE&&enc!=enc2)
-                    Error:: errort(tok, "unsupported non-standard concatenation of string literals: %s", Utils::tok2s(tok));
+                    Error:: errort(tok, "unsupported non-standard concatenation of string literals: %s", lex->tok2s(tok));
                 b+=*(tok.sval);
                 if (enc==DataStruct::ENCODE::ENC_NONE)
                     enc=enc2;
@@ -374,8 +374,8 @@ std::vector<DataStruct::Token > MacroPreprocessor::add_hide_set(std::vector<Data
 //把两个token以字符串的形式连接,并重新解析该token
 DataStruct::Token MacroPreprocessor::glue_tokens(const DataStruct::Token& t, const DataStruct::Token &u) const {
     std::string b;
-    b+=Utils::format("%s",Utils::tok2s(t));
-    b+=Utils::format("%s", Utils::tok2s(u));
+    b+=Utils::format("%s",lex->tok2s(t));
+    b+=Utils::format("%s", lex->tok2s(u));
     DataStruct::Token r = lex->lex_string(b);
     return r;
 }
@@ -419,7 +419,7 @@ void MacroPreprocessor::read_directive(const DataStruct::Token& hash)
     return;
 
 err:
-    Error::errort(hash, "unsupported preprocessor directive: %s", Utils::tok2s(tok));
+    Error::errort(hash, "unsupported preprocessor directive: %s", lex->tok2s(tok));
 }
 //函数宏不支持括号的嵌套
 bool MacroPreprocessor::read_funclike_macro_params(const DataStruct::Token &name, std::unordered_map<std::string ,DataStruct::Token >&param)
@@ -431,7 +431,7 @@ bool MacroPreprocessor::read_funclike_macro_params(const DataStruct::Token &name
             return false;
         if (pos) {
             if (!lex->is_keyword(tok, lex->get_keywords(",")))
-                Error::errort(tok, ", expected, but got %s", Utils::tok2s(tok));
+                Error::errort(tok, ", expected, but got %s", lex->tok2s(tok));
             tok = lex->lex();
         }
         if (tok.kind == DataStruct::TOKEN_TYPE::TNEWLINE)
@@ -442,7 +442,7 @@ bool MacroPreprocessor::read_funclike_macro_params(const DataStruct::Token &name
             return true;
         }
         if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
-            Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+            Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
         std::string arg = *tok.sval;
         if (next(DataStruct::AST_TYPE::KELLIPSIS)) { //命名可变参数
             expect(lex->get_keywords(")"));
@@ -533,11 +533,11 @@ bool MacroPreprocessor::is_digit_seq(std::string &seq) const {
 void MacroPreprocessor::read_linemarker(const DataStruct::Token &tok)
 {
     if (!is_digit_seq(*(tok.sval)))
-        Error::errort(tok, "line number expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "line number expected, but got %s", lex->tok2s(tok));
     int line=stoi(*(tok.sval));
     DataStruct::Token filename=lex->lex();
     if (filename.kind!=DataStruct::TOKEN_TYPE::TSTRING)
-        Error::errort(tok, "filename expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "filename expected, but got %s", lex->tok2s(tok));
     std::string name=*(filename.sval);
     while (filename.kind!=DataStruct::TOKEN_TYPE::TNEWLINE)
         filename=lex->lex();
@@ -607,7 +607,7 @@ std::string MacroPreprocessor::read_error_message() {
             return b;
         if (!b.empty() && tok.space)
             b+=' ';
-        b+=Utils::format( "%s", Utils::tok2s(tok));
+        b+=Utils::format( "%s", lex->tok2s(tok));
     }
 }
 void MacroPreprocessor::read_error(const DataStruct::Token&hash)
@@ -621,7 +621,7 @@ DataStruct::Token MacroPreprocessor::read_defined_op(){
         expect(lex->get_keywords(")"));
     }
     if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
-        Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
 //##################################
 //    std::cout<<"search ";
     return macros.find(*tok.sval)!=macros.end() ? CPP_TOKEN_ONE : CPP_TOKEN_ZERO;
@@ -664,7 +664,7 @@ bool MacroPreprocessor::read_constexpr() {
 //    std::cout<<std::endl;
 
     if (tok.kind != DataStruct::TOKEN_TYPE::TEOF)
-        Error::errort(tok, "stray token: %s", Utils::tok2s(tok));
+        Error::errort(tok, "stray token: %s", lex->tok2s(tok));
     lex->token_buffer_unstash();
     return parser->eval_intexpr(expr, nullptr);
 }
@@ -677,7 +677,7 @@ void MacroPreprocessor::read_ifdef()
 {
     DataStruct::Token tok = lex->lex();
     if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
-        Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
     expect_newline();
     do_read_if(macros.find(*(tok.sval))!=macros.end());
 }
@@ -686,7 +686,7 @@ void MacroPreprocessor::read_ifndef()
 {
     DataStruct::Token tok = lex->lex();
     if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
-        Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
     expect_newline();
     do_read_if(macros.find(*(tok.sval))==macros.end());
     if (tok.count == 2) {
@@ -698,7 +698,7 @@ void MacroPreprocessor::read_ifndef()
 std::string MacroPreprocessor::join_paths(std::vector<DataStruct::Token >& args) {
     std::string b;
     for (auto &e:args)
-        b+=Utils::format("%s", Utils::tok2s(e));
+        b+=Utils::format("%s", lex->tok2s(e));
     return b;
 }
 
@@ -717,7 +717,7 @@ std::string MacroPreprocessor::read_cpp_header_name(const DataStruct::Token &has
         return *(tok.sval);
     }
     if (!lex->is_keyword(tok, lex->get_keywords("<")))
-        Error::errort(tok, "< expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "< expected, but got %s", lex->tok2s(tok));
     std::vector<DataStruct::Token > tokens;
     for (;;) {
         DataStruct::Token tok = read_expand_newline();
@@ -822,7 +822,7 @@ void MacroPreprocessor::read_line()
 {
     DataStruct::Token tok = read_expand_newline();
     if (tok.kind != DataStruct::TOKEN_TYPE::TNUMBER || !is_digit_seq(*(tok.sval)))
-        Error::errort(tok, "number expected after #line, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "number expected after #line, but got %s", lex->tok2s(tok));
     int line = stoi(*(tok.sval));
     tok = read_expand_newline();
     std::string filename;
@@ -830,7 +830,7 @@ void MacroPreprocessor::read_line()
         filename = *(tok.sval);
         expect_newline();
     } else if (tok.kind != DataStruct::TOKEN_TYPE::TNEWLINE) {
-        Error::errort(tok, "newline or a source name are expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "newline or a source name are expected, but got %s", lex->tok2s(tok));
     }
     std::shared_ptr<DataStruct::File > f = lex->current_file();
     f->line = line;
@@ -942,8 +942,7 @@ void MacroPreprocessor::init_path_and_macros() {
     std_include_path.emplace_back("/usr/include");
     std_include_path.emplace_back("/usr/include/linux");
     std_include_path.emplace_back("/usr/include/x86_64-linux-gnu");
-//    std_include_path.emplace_back("/usr/lib/gcc/x86_64-linux-gnu/5/include");
-
+    std_include_path.emplace_back("/usr/lib/gcc/x86_64-linux-gnu/5/include");
     macros["__DATE__"]=make_special_macro(handle_date_macro);
     macros["__TIME__"]=make_special_macro(handle_time_macro);
     macros["__FILE__"]= make_special_macro(handle_file_macro);
@@ -1016,7 +1015,7 @@ void handle_pragma_macro(MacroPreprocessor* thi,const DataStruct::Token &tmpl) {
     thi->expect(thi->lex->get_keywords("("));
     const DataStruct::Token &operand = thi->read_token();
     if (operand.kind != DataStruct::TOKEN_TYPE::TSTRING)
-        Error::errort(operand, "_Pragma takes a string literal, but got %s", Utils::tok2s(operand));
+        Error::errort(operand, "_Pragma takes a string literal, but got %s", thi->lex->tok2s(operand));
     thi->expect(thi->lex->get_keywords(")"));
     thi->parse_pragma_operand(operand);
     thi->make_token_pushback(tmpl, DataStruct::TOKEN_TYPE::TNUMBER, "1");

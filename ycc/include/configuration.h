@@ -4,6 +4,7 @@
 
 #ifndef YCC_CONFIGURATION_H
 #define YCC_CONFIGURATION_H
+
 #define _LP64 1
 #define __ycc__ 1
 #define __ELF__ 1
@@ -50,4 +51,5 @@
 
 typedef unsigned short char16_t;
 typedef unsigned int char32_t;
+
 #endif //Y

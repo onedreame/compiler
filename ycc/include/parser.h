@@ -24,6 +24,8 @@ public:
         }
     };
     bool is_funcdef();
+    std::string node2s(const std::shared_ptr<DataStruct::Node> &node);
+    std::string ty2s(const std::shared_ptr<DataStruct::Type> &ty);
     std::shared_ptr<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>> env(){
         return localenv?localenv:globalenv;
     };
@@ -45,6 +47,12 @@ public:
     std::shared_ptr<std::vector<DataStruct::Node>> read_toplevels();
     DataStruct::Node read_funcdef();
     std::shared_ptr<DataStruct::Node> read_expr();
+    bool is_inttype(const std::shared_ptr<DataStruct::Type>&);
+    bool is_flotype(const std::shared_ptr<DataStruct::Type>&);
+    std::string make_static_label(const std::string &);
+    std::string  make_tempname();
+    std::string make_label();
+    Parser::Case make_case(int beg, int end, const std::string &label);
     void set_depency(std::shared_ptr<MacroPreprocessor>& _macro,std::shared_ptr<Lex>& _lex){
         lex=_lex;
         macro=_macro;
@@ -114,16 +122,21 @@ private:
 
     void CHECK_CPP();
     void CHECK_LEX();
+
+    std::string decorate_int(const std::string &name, const std::shared_ptr<DataStruct::Type> &ty);
+    std::string do_ty2s(std::unordered_map<std::shared_ptr<DataStruct::Type>, bool> &dict,
+                        const std::shared_ptr<DataStruct::Type> &ty);
+    void do_node2s(std::string&b, const std::shared_ptr<DataStruct::Node> &node);
+
+    void a2s_declinit(std::string &b, const std::vector<std::shared_ptr<DataStruct::Node>> &initlist);
+    void uop_to_string(std::string &b, std::string &&op, const std::shared_ptr<DataStruct::Node> &node);
+    void binop_to_string(std::string &b, std::string &&op, const std::shared_ptr<DataStruct::Node> &node);
 //    std::function<std::string(const std::string&)> lower=_lower;
     std::shared_ptr<DataStruct::Type> make_rectype(bool);
     std::shared_ptr<DataStruct::Type> make_numtype(DataStruct::TYPE_KIND, bool);
     std::shared_ptr<DataStruct::Type> make_func_type(const std::shared_ptr<DataStruct::Type> &, const std::vector<DataStruct::Type> &, bool, bool) ;
     std::shared_ptr<DataStruct::Type> make_ptr_type(const std::shared_ptr<DataStruct::Type> &);
     std::shared_ptr<DataStruct::Type> make_array_type(const std::shared_ptr<DataStruct::Type>&, int );
-    std::string make_static_label(const std::string &);
-    std::string  make_tempname();
-    std::string make_label();
-    Parser::Case make_case(int beg, int end, const std::string &label);
     std::shared_ptr<DataStruct::Node> ast_lvar(const std::shared_ptr<DataStruct::Type> &, const std::string &);
     std::shared_ptr<DataStruct::Node> ast_gvar(const std::shared_ptr<DataStruct::Type> &, const std::string &);
     std::shared_ptr<DataStruct::Node> ast_inttype(const std::shared_ptr<DataStruct::Type> &, long ) ;
@@ -162,9 +175,7 @@ private:
     std::shared_ptr<DataStruct::Node> ast_label(const std::string &);
     std::shared_ptr<DataStruct::Node> ast_dest(const std::string &);
     std::shared_ptr<DataStruct::Node> ast_label_addr(const std::string &);
-    bool is_inttype(const std::shared_ptr<DataStruct::Type>&);
 
-    bool is_flotype(const std::shared_ptr<DataStruct::Type>&);
     bool is_arithtype(const std::shared_ptr<DataStruct::Type>&);
     bool is_type(const DataStruct::Token&);
     bool is_string(const std::shared_ptr<DataStruct::Type>&);

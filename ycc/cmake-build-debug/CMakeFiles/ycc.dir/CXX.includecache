@@ -51,6 +51,10 @@ fstream
 -
 memory
 -
+unordered_map
+-
+iostream
+-
 enumerate.h
 /home/yk/compiler/ycc/include/enumerate.h
 
@@ -66,7 +70,23 @@ string
 sstream
 -
 
+/home/yk/compiler/ycc/include/code_gen.h
+string
+-
+vector
+-
+memory
+-
+parser.h
+/home/yk/compiler/ycc/include/parser.h
+
 /home/yk/compiler/ycc/include/colors.h
+
+/home/yk/compiler/ycc/include/encode.h
+cstdint
+-
+string
+-
 
 /home/yk/compiler/ycc/include/enumerate.h
 keyword.inc
@@ -74,6 +94,8 @@ keyword.inc
 
 /home/yk/compiler/ycc/include/error.h
 string
+-
+iostream
 -
 Token.h
 /home/yk/compiler/ycc/include/Token.h
@@ -93,6 +115,8 @@ Lex.h
 /home/yk/compiler/ycc/include/Lex.h
 
 /home/yk/compiler/ycc/include/parser.h
+macro.h
+/home/yk/compiler/ycc/include/macro.h
 
 /home/yk/compiler/ycc/include/path.h
 string
@@ -117,14 +141,24 @@ iostream
 -
 include/Token.h
 /home/yk/compiler/ycc/include/Token.h
+include/buffer.h
+/home/yk/compiler/ycc/include/buffer.h
+include/Lex.h
+/home/yk/compiler/ycc/include/Lex.h
+test/funcTest.h
+/home/yk/compiler/ycc/test/funcTest.h
+include/utils.h
+/home/yk/compiler/ycc/include/utils.h
 
 /home/yk/compiler/ycc/src/Lex.cpp
 sys/stat.h
 -
 ../include/Lex.h
 /home/yk/compiler/ycc/include/Lex.h
-../include/error.h
-/home/yk/compiler/ycc/include/error.h
+../include/encode.h
+/home/yk/compiler/ycc/include/encode.h
+../include/keyword.inc
+/home/yk/compiler/ycc/include/keyword.inc
 ../include/keyword.inc
 /home/yk/compiler/ycc/include/keyword.inc
 ../include/keyword.inc
@@ -137,6 +171,8 @@ sys/stat.h
 /home/yk/compiler/ycc/src/Token.cpp
 ../include/Token.h
 /home/yk/compiler/ycc/include/Token.h
+../include/error.h
+/home/yk/compiler/ycc/include/error.h
 
 /home/yk/compiler/ycc/src/buffer.cpp
 cstring
@@ -145,6 +181,18 @@ iomanip
 -
 ../include/buffer.h
 /home/yk/compiler/ycc/include/buffer.h
+
+/home/yk/compiler/ycc/src/code_gen.cpp
+sys/stat.h
+-
+../include/code_gen.h
+/home/yk/compiler/ycc/include/code_gen.h
+
+/home/yk/compiler/ycc/src/encode.cpp
+../include/encode.h
+/home/yk/compiler/ycc/include/encode.h
+../include/error.h
+/home/yk/compiler/ycc/include/error.h
 
 /home/yk/compiler/ycc/src/error.cpp
 iostream
@@ -161,16 +209,20 @@ memory
 /home/yk/compiler/ycc/src/macro.cpp
 libgen.h
 -
-../include/macro.h
-/home/yk/compiler/ycc/include/macro.h
-../include/utils.h
-/home/yk/compiler/ycc/include/utils.h
 ../include/path.h
 /home/yk/compiler/ycc/include/path.h
+../include/parser.h
+/home/yk/compiler/ycc/include/parser.h
 
 /home/yk/compiler/ycc/src/parser.cpp
 ../include/parser.h
 /home/yk/compiler/ycc/include/parser.h
+../include/encode.h
+/home/yk/compiler/ycc/include/encode.h
+../include/buffer.h
+/home/yk/compiler/ycc/include/buffer.h
+../include/keyword.inc
+/home/yk/compiler/ycc/include/keyword.inc
 
 /home/yk/compiler/ycc/src/path.cpp
 iostream
@@ -197,12 +249,38 @@ libgen.h
 -
 vector
 -
+algorithm
+-
+wait.h
+-
 ../include/buffer.h
 /home/yk/compiler/ycc/include/buffer.h
 ../include/error.h
 /home/yk/compiler/ycc/include/error.h
-../include/Lex.h
-/home/yk/compiler/ycc/include/Lex.h
-../include/keyword.inc
-/home/yk/compiler/ycc/include/keyword.inc
+../include/utils.h
+/home/yk/compiler/ycc/include/utils.h
+../include/code_gen.h
+/home/yk/compiler/ycc/include/code_gen.h
+
+/home/yk/compiler/ycc/test/funcTest.cpp
+funcTest.h
+/home/yk/compiler/ycc/test/funcTest.h
+../include/path.h
+/home/yk/compiler/ycc/include/path.h
+dirent.h
+-
+cstring
+-
+fstream
+-
+unordered_set
+-
+../include/utils.h
+/home/yk/compiler/ycc/include/utils.h
+../include/code_gen.h
+/home/yk/compiler/ycc/include/code_gen.h
+
+/home/yk/compiler/ycc/test/funcTest.h
+string
+-
 

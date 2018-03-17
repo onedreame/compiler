@@ -26,6 +26,8 @@ set(SOURCE_FILES
         src/path.cpp
         src/Token.cpp
         src/utils.cpp
-        main.cpp)
+        test/funcTest.h
+        test/funcTest.cpp
+        main.cpp src/encode.cpp include/encode.h src/code_gen.cpp include/code_gen.h include/configuration.h)
 
 add_executable(ycc ${SOURCE_FILES})

@@ -133,7 +133,7 @@ namespace DataStruct
         EXCLAMATION='!',
         AND='&',
         OR='|',
-        NOT='^',
+        XOR='^',
         NEG='~',
         QUES='?',
         SEMI=';',

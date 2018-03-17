@@ -3,11 +3,89 @@
 //
 #include "../include/parser.h"
 #include "../include/encode.h"
+#include "../include/buffer.h"
 
 std::shared_ptr<Parser> Parser::Instance(){
     if (_parser== nullptr)
         _parser.reset(new Parser());
     return _parser;
+}
+std::string Parser::decorate_int(const std::string &name, const std::shared_ptr<DataStruct::Type> &ty) {
+    auto u = (ty->usig) ? "u" : "";
+    if (ty->bitsize > 0)
+        return Utils::format("%s%s:%d:%d", u, name, ty->bitoff, ty->bitoff + ty->bitsize);
+    return u + name;
+}
+
+std::string Parser::do_ty2s(std::unordered_map<std::shared_ptr<DataStruct::Type>, bool> &dict,
+                    const std::shared_ptr<DataStruct::Type> &ty) {
+    if (!ty)
+        return "(nil)";
+    switch (ty->kind) {
+        case DataStruct::TYPE_KIND::KIND_VOID:
+            return "void";
+        case DataStruct::TYPE_KIND::KIND_BOOL:
+            return "_Bool";
+        case DataStruct::TYPE_KIND::KIND_CHAR:
+            return decorate_int("char", ty);
+        case DataStruct::TYPE_KIND::KIND_SHORT:
+            return decorate_int("short", ty);
+        case DataStruct::TYPE_KIND::KIND_INT:
+            return decorate_int("int", ty);
+        case DataStruct::TYPE_KIND::KIND_LONG:
+            return decorate_int("long", ty);
+        case DataStruct::TYPE_KIND::KIND_LLONG:
+            return decorate_int("llong", ty);
+        case DataStruct::TYPE_KIND::KIND_FLOAT:
+            return "float";
+        case DataStruct::TYPE_KIND::KIND_DOUBLE:
+            return "double";
+        case DataStruct::TYPE_KIND::KIND_LDOUBLE:
+            return "long double";
+        case DataStruct::TYPE_KIND::KIND_PTR:
+            return Utils::format("*%s", do_ty2s(dict, ty->ptr));
+        case DataStruct::TYPE_KIND::KIND_ARRAY:
+            return Utils::format("[%d]%s", ty->len, do_ty2s(dict, ty->ptr));
+        case DataStruct::TYPE_KIND::KIND_STRUCT: {
+            auto kind = ty->is_struct ? "struct" : "union";
+            if (dict.find(ty) != dict.end())
+                return Utils::format("(%s)", kind);
+            dict[ty] = true;
+            if (!ty->fields.empty()) {
+                std::string b;
+                b += "(";
+                b += kind;
+                for (auto &ele:ty->fields) {
+                    auto fieldtype = ele.second;
+                    Utils::buf_printf(b, " (%s)", do_ty2s(dict, fieldtype));
+                }
+                b += ")";
+                return b;
+            }
+        }
+        case DataStruct::TYPE_KIND::KIND_FUNC: {
+            std::string b;
+            b += "(";
+            if (!(ty->params.empty())) {
+                for (int i = 0; i < ty->params.size(); i++) {
+                    if (i > 0)
+                        b += ",";
+                    auto t = ty->params[i];
+
+                    b += do_ty2s(dict, t);
+                }
+            }
+            Utils::buf_printf(b, ")=>%s", do_ty2s(dict, ty->rettype));
+            return b;
+        }
+        default:
+            return Utils::format("(Unknown ty: %d)", static_cast<int >(ty->kind));
+    }
+}
+
+std::string Parser::ty2s(const std::shared_ptr<DataStruct::Type> &ty) {
+    std::unordered_map<std::shared_ptr<DataStruct::Type>, bool> dict;
+    return do_ty2s(dict, ty);
 }
 std::shared_ptr<Parser> Parser::_parser=nullptr;
 void Parser::CHECK_CPP(){
@@ -19,6 +97,260 @@ void Parser::CHECK_LEX(){
     if (lex== nullptr)
         Error::error("Lex in Parser should be initialized.");
 }
+
+void Parser::uop_to_string(std::string &b, std::string &&op, const std::shared_ptr<DataStruct::Node> &node) {
+    Utils::buf_printf(b, "(%s %s)", op, node2s(node->unop));
+}
+
+void Parser::binop_to_string(std::string &b, std::string &&op, const std::shared_ptr<DataStruct::Node> &node) {
+    Utils::buf_printf(b, "(%s %s %s)", op, node2s(node->left), node2s(node->right));
+}
+
+void Parser::a2s_declinit(std::string &b, const std::vector<std::shared_ptr<DataStruct::Node>> &initlist) {
+    for (int i = 0; i < initlist.size(); i++) {
+        if (i > 0)
+            b += " ";
+        b += node2s(initlist[i]);
+    }
+}
+void Parser::do_node2s(std::string &b, const std::shared_ptr<DataStruct::Node> &node) {
+    if (!node) {
+        b += "(nil)";
+        return;
+    }
+    switch (node->getKind()) {
+        case DataStruct::AST_TYPE::AST_LITERAL:
+            switch (node->getTy()->kind) {
+                case DataStruct::TYPE_KIND::KIND_CHAR:
+                    if (node->ival == '\n') b += "'\n'";
+                    else if (node->ival == '\\') b += "'\\\\'";
+                    else if (node->ival == '\0') b += "'\\0'";
+                    else Utils::buf_printf(b, "'%c'", node->ival);
+                    break;
+                case DataStruct::TYPE_KIND::KIND_INT:
+                    b += std::to_string(node->ival);
+                    break;
+                case DataStruct::TYPE_KIND::KIND_LONG:
+                    b += std::to_string(node->ival) + "L";
+                    break;
+                case DataStruct::TYPE_KIND::KIND_LLONG:
+                    b += std::to_string(node->ival) + "L";
+                    break;
+                case DataStruct::TYPE_KIND::KIND_FLOAT:
+                case DataStruct::TYPE_KIND::KIND_DOUBLE:
+                case DataStruct::TYPE_KIND::KIND_LDOUBLE:
+                    b += std::to_string(node->fval);
+                    break;
+                case DataStruct::TYPE_KIND::KIND_ARRAY:
+                    b += Utils::format("\"%s\"", node->sval);
+                    break;
+                default:
+                    Error::error("internal error");
+            }
+            break;
+        case DataStruct::AST_TYPE::AST_LABEL:
+            b += node->label + ":";
+            break;
+        case DataStruct::AST_TYPE::AST_LVAR:
+            Utils::buf_printf(b, "lv=%s", node->varname);
+            if (!node->lvarinit.empty()) {
+//                    std::vector<std::shared_ptr<DataStruct::Node>> v;
+//                    for(auto e:node->lvarinit)
+//                        v.push_back(std::make_shared<DataStruct::Node>(e));
+                b += "(";
+                a2s_declinit(b, node->lvarinit);
+                b += ")";
+            }
+            break;
+        case DataStruct::AST_TYPE::AST_GVAR:
+            Utils::buf_printf(b, "gv=%s", node->varname);
+            break;
+        case DataStruct::AST_TYPE::AST_FUNCALL:
+        case DataStruct::AST_TYPE::AST_FUNCPTR_CALL: {
+            Utils::buf_printf(b, "(%s)%s(", ty2s(node->getTy()),
+                       node->getKind() == DataStruct::AST_TYPE::AST_FUNCALL ? node->fname : node2s(node));
+            for (int i = 0; i < node->args.size(); i++) {
+                if (i > 0)
+                    b += ",";
+                b += node2s(std::make_shared<DataStruct::Node>(node->args[i]));
+            }
+            b += ")";
+            break;
+        }
+        case DataStruct::AST_TYPE::AST_FUNCDESG: {
+            Utils::buf_printf(b, "(funcdesg %s)", node->fname);
+            break;
+        }
+        case DataStruct::AST_TYPE::AST_FUNC: {
+            Utils::buf_printf(b, "(%s)%s(", ty2s(node->getTy()), node->fname);
+            for (int i = 0; i < node->params.size(); i++) {
+                if (i > 0)
+                    b += ",";
+                Utils::buf_printf(b, "%s %s", ty2s(node->params[i].getTy()),
+                           node2s(std::make_shared<DataStruct::Node>(node->params[i])));
+            }
+            b += ")";
+            do_node2s(b, node->body);
+            break;
+        }
+        case DataStruct::AST_TYPE::AST_GOTO:
+            Utils::buf_printf(b, "goto(%s)", node->label);
+            break;
+        case DataStruct::AST_TYPE::AST_DECL:
+            Utils::buf_printf(b, "(decl %s %s",
+                       ty2s(node->declvar->getTy()),
+                       node->declvar->varname);
+            if (!node->declinit.empty()) {
+                b += " ";
+                a2s_declinit(b, node->declinit);
+            }
+            b += ")";
+            break;
+        case DataStruct::AST_TYPE::AST_INIT:
+            Utils::buf_printf(b, "%s@%d", node2s(node->initval), node->initoff, ty2s(node->totype));
+            break;
+        case DataStruct::AST_TYPE::AST_CONV:
+            Utils::buf_printf(b, "(conv %s=>%s)", node2s(node->unop), ty2s(node->getTy()));
+            break;
+        case DataStruct::AST_TYPE::AST_IF:
+            Utils::buf_printf(b, "(if %s %s",
+                       node2s(node->cond),
+                       node2s(node->then));
+            if (node->els)
+                b += node2s(node->els);
+            b += ")";
+            break;
+        case DataStruct::AST_TYPE::AST_TERNARY:
+            Utils::buf_printf(b, "(? %s %s %s)",
+                       node2s(node->cond),
+                       node2s(node->then),
+                       node2s(node->els));
+            break;
+        case DataStruct::AST_TYPE::AST_RETURN:
+            Utils::buf_printf(b, "(return %s)", node2s(node->retval));
+            break;
+        case DataStruct::AST_TYPE::AST_COMPOUND_STMT: {
+            b += "{";
+            for (auto &e:node->stmts) {
+                do_node2s(b, e);
+                b += ";";
+            }
+            b += "}";
+            break;
+        }
+        case DataStruct::AST_TYPE::AST_STRUCT_REF:
+            do_node2s(b, node->struc);
+            b += ".";
+            b += node->field;
+            break;
+        case DataStruct::AST_TYPE::AST_ADDR:
+            uop_to_string(b, "addr", node);
+            break;
+        case DataStruct::AST_TYPE::AST_DEREF:
+            uop_to_string(b, "deref", node);
+            break;
+        case DataStruct::AST_TYPE::OP_SAL:
+            binop_to_string(b, "<<", node);
+            break;
+        case DataStruct::AST_TYPE::OP_SAR:
+        case DataStruct::AST_TYPE::OP_SHR:
+            binop_to_string(b, ">>", node);
+            break;
+        case DataStruct::AST_TYPE::OP_GE:
+            binop_to_string(b, ">=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_LE:
+            binop_to_string(b, "<=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_NE:
+            binop_to_string(b, "!=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_PRE_INC:
+            uop_to_string(b, "pre++", node);
+            break;
+        case DataStruct::AST_TYPE::OP_PRE_DEC:
+            uop_to_string(b, "pre--", node);
+            break;
+        case DataStruct::AST_TYPE::OP_POST_INC:
+            uop_to_string(b, "post++", node);
+            break;
+        case DataStruct::AST_TYPE::OP_POST_DEC:
+            uop_to_string(b, "post--", node);
+            break;
+        case DataStruct::AST_TYPE::OP_LOGAND:
+            binop_to_string(b, "and", node);
+            break;
+        case DataStruct::AST_TYPE::OP_LOGOR:
+            binop_to_string(b, "or", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_ADD:
+            binop_to_string(b, "+=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_SUB:
+            binop_to_string(b, "-=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_MUL:
+            binop_to_string(b, "*=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_DIV:
+            binop_to_string(b, "/=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_MOD:
+            binop_to_string(b, "%=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_AND:
+            binop_to_string(b, "&=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_OR:
+            binop_to_string(b, "|=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_XOR:
+            binop_to_string(b, "^=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_SAL:
+            binop_to_string(b, "<<=", node);
+            break;
+        case DataStruct::AST_TYPE::OP_A_SAR:
+        case DataStruct::AST_TYPE::OP_A_SHR:
+            binop_to_string(b, ">>=", node);
+            break;
+        case DataStruct::AST_TYPE::EXCLAMATION:
+            uop_to_string(b, "!", node);
+            break;
+        case DataStruct::AST_TYPE::AND:
+            binop_to_string(b, "&", node);
+            break;
+        case DataStruct::AST_TYPE::OR:
+            binop_to_string(b, "|", node);
+            break;
+        case DataStruct::AST_TYPE::OP_CAST: {
+            Utils::buf_printf(b, "((%s)=>(%s) %s)",
+                       ty2s(node->unop->getTy()),
+                       ty2s(node->getTy()),
+                       node2s(node->unop));
+            break;
+        }
+        case DataStruct::AST_TYPE::OP_LABEL_ADDR:
+            Utils::buf_printf(b, "&&%s", node->label);
+            break;
+        default: {
+            auto left = node2s(node->left);
+            auto right = node2s(node->right);
+            if (node->getKind() == DataStruct::AST_TYPE::OP_EQ)
+                b += "(== ";
+            else
+                Utils::buf_printf(b, "(%c ", static_cast<char >(node->getKind()));
+            Utils::buf_printf(b, "%s %s)", left, right);
+        }
+    }
+}
+
+std::string Parser::node2s(const std::shared_ptr<DataStruct::Node> &node) {
+    std::string b;
+    do_node2s(b, node);
+    return b;
+}
+
 /**
   * @brief  make a struct or union Type,whose kind is KIND_STRUCT
   * @param is_struct bool true if struct,false if union
@@ -325,9 +657,9 @@ std::shared_ptr<DataStruct::Node> Parser::ast_funcall(const std::shared_ptr<Data
 std::shared_ptr<DataStruct::Node> Parser::ast_funcptr_call(std::shared_ptr<DataStruct::Node>&fptr,
                                                    const std::vector<DataStruct::Node> &args) {
     if (fptr->getTy()->kind!=DataStruct::TYPE_KIND::KIND_PTR)
-        Error::error("%s is not a func pointer",Utils::ty2s(fptr->getTy()));
+        Error::error("%s is not a func pointer",ty2s(fptr->getTy()));
     if (fptr->getTy()->ptr->kind!=DataStruct::TYPE_KIND::KIND_FUNC)
-        Error::error("%s is not a func",Utils::ty2s(fptr->getTy()));
+        Error::error("%s is not a func",ty2s(fptr->getTy()));
     auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_FUNCPTR_CALL,fptr->getTy()->ptr->rettype,sl);
     node->fptr=fptr;
     node->args=args;
@@ -480,13 +812,13 @@ void Parser::ensure_lvalue(const std::shared_ptr<DataStruct::Node> &node){
         case DataStruct::AST_TYPE::AST_DEREF: case DataStruct::AST_TYPE::AST_STRUCT_REF:
             return;
         default:
-            Error::error("lvalue expected, but got %s", Utils::node2s(node));
+            Error::error("lvalue expected, but got %s", node2s(node));
     }
 }
 //ensure node is int type
 void Parser::ensure_inttype(const std::shared_ptr<DataStruct::Node> &node){
     if (!is_inttype(node->getTy()))
-        Error::error("integer type expected, but got %s", Utils::node2s(node));
+        Error::error("integer type expected, but got %s", node2s(node));
 }
 //only bool, char, short,int,long,long long are int type.
 bool Parser::is_inttype(const std::shared_ptr<DataStruct::Type> &ty) {
@@ -502,7 +834,7 @@ bool Parser::is_inttype(const std::shared_ptr<DataStruct::Type> &ty) {
 //ensure node is int type or float type
 void Parser::ensure_arithtype(const std::shared_ptr<DataStruct::Node> &node) {
     if (!is_arithtype(node->getTy()))
-        Error::error("arithmetic type expected, but got %s", Utils::node2s(node));
+        Error::error("arithmetic type expected, but got %s", node2s(node));
 }
 //float, double, long double
 bool Parser::is_flotype(const std::shared_ptr<DataStruct::Type> &ty) {
@@ -571,7 +903,7 @@ int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, std::sha
         case DataStruct::AST_TYPE::AST_LITERAL:
             if (is_inttype(node->getTy()))
                 return node->ival;
-            Error::error("Integer expression expected, but got %s", Utils::node2s(node));
+            Error::error("Integer expression expected, but got %s", node2s(node));
         case DataStruct::AST_TYPE::EXCLAMATION: return !eval_intexpr(node->unop, addr);
         case DataStruct::AST_TYPE::NEG: return ~eval_intexpr(node->unop, addr);
         case DataStruct::AST_TYPE::OP_CAST: return eval_intexpr(node->unop, addr);
@@ -603,7 +935,7 @@ int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, std::sha
         case DataStruct::AST_TYPE::DIV: return L / R;
         case DataStruct::AST_TYPE::LOW: return L < R;
         case DataStruct::AST_TYPE::HIG: return L > R;
-        case DataStruct::AST_TYPE::NOT: return L ^ R;
+        case DataStruct::AST_TYPE::XOR: return L ^ R;
         case DataStruct::AST_TYPE::AND: return L & R;
         case DataStruct::AST_TYPE::OR: return L | R;
         case DataStruct::AST_TYPE::LEFT: return L % R;
@@ -619,7 +951,7 @@ int Parser::eval_intexpr(const std::shared_ptr<DataStruct::Node> &node, std::sha
 #undef R
         default:
         error:
-            Error::error("Integer expression expected, but got %s", Utils::node2s(node));
+            Error::error("Integer expression expected, but got %s", node2s(node));
     }
 }
 int Parser::read_intexpr() {
@@ -689,7 +1021,7 @@ std::vector<DataStruct::Node> Parser::read_oldstyle_param_args() {
         if (lex->is_keyword(macro->peek_token(), lex->get_keywords("{")))
             break;
         if (!is_type(macro->peek_token()))
-            Error::errort(macro->peek_token(), "K&R-style declarator expected, but got %s", Utils::tok2s(macro->peek_token()));
+            Error::errort(macro->peek_token(), "K&R-style declarator expected, but got %s", lex->tok2s(macro->peek_token()));
         read_decl(&r, false);
     }
     localenv = orig;
@@ -701,13 +1033,13 @@ std::vector<DataStruct::Node> Parser::read_oldstyle_param_args() {
 void Parser::update_oldstyle_param_type(std::vector<DataStruct::Node>  *params, std::vector<DataStruct::Node> &declvars) {
     for (auto&decl:declvars) {
         if (decl.getKind()!=DataStruct::AST_TYPE::AST_DECL)
-            Error::error("%s is not a declation type.",Utils::node2s(std::make_shared<DataStruct::Node>(decl)));
+            Error::error("%s is not a declation type.",node2s(std::make_shared<DataStruct::Node>(decl)));
         auto var = decl.declvar;
         if (var->getKind()!=DataStruct::AST_TYPE::AST_LVAR)
-            Error::error("%s is not a local var type",Utils::node2s(decl.declvar));
+            Error::error("%s is not a local var type",node2s(decl.declvar));
         for(auto& param:*params){
             if(param.getKind()!=DataStruct::AST_TYPE::AST_LVAR)
-                Error::error("%s is not a local var type",Utils::node2s(std::make_shared<DataStruct::Node>(param)));
+                Error::error("%s is not a local var type",node2s(std::make_shared<DataStruct::Node>(param)));
             if (param.varname!= var->varname)
                 continue;
             param.setTy(var->getTy());
@@ -918,7 +1250,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_generic(){
             return expr;
     }
     if (!defaultexpr)
-        Error::errort(tok, "no matching generic selection for %s: %s", Utils::node2s(contexpr), Utils::ty2s(contexpr->getTy()));
+        Error::errort(tok, "no matching generic selection for %s: %s", node2s(contexpr),ty2s(contexpr->getTy()));
     return defaultexpr;
 }
 std::vector<std::shared_ptr<DataStruct::Node>> Parser::read_func_args(const std::vector<std::shared_ptr<DataStruct::Type>> &params) {
@@ -945,7 +1277,7 @@ std::vector<std::shared_ptr<DataStruct::Node>> Parser::read_func_args(const std:
         auto tok = macro->read_token();
         if (lex->is_keyword(tok, lex->get_keywords(")"))) break;
         if (!lex->is_keyword(tok, lex->get_keywords(",")))
-            Error::errort(tok, "unexpected token: '%s'", Utils::tok2s(tok));
+            Error::errort(tok, "unexpected token: '%s'", lex->tok2s(tok));
     }
     return args;
 }
@@ -972,7 +1304,7 @@ void Parser::read_static_assert(){
     macro->expect(lex->get_keywords(","));
     DataStruct::Token tok = macro->read_token();
     if (tok.kind != DataStruct::TOKEN_TYPE::TSTRING)
-        Error::errort(tok, "string expected as the second argument for _Static_assert, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "string expected as the second argument for _Static_assert, but got %s",lex->tok2s(tok));
     macro->expect(lex->get_keywords(")"));
     macro->expect(lex->get_keywords(";"));
     if (!val)
@@ -1032,7 +1364,7 @@ void Parser::read_decl(std::vector<DataStruct::Node>* block, bool isglobal){
         if (macro->next(lex->get_keywords(";")))
             return;
         if (!macro->next(lex->get_keywords(",")))
-            Error::errort(macro->peek_token(), "';' or ',' are expected, but got %s", Utils::tok2s(macro->peek_token()));
+            Error::errort(macro->peek_token(), "';' or ',' are expected, but got %s", lex->tok2s(macro->peek_token()));
     }
 }
 //函数如果未定义返回类型，则默认返回int
@@ -1049,7 +1381,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_decl_spec(DataStruct::QUALITIFIER
     CHECK_LEX();
     DataStruct::Token tok = macro->peek_token();
     if (!is_type(tok))
-        Error::errort(tok, "type name expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "type name expected, but got %s", lex->tok2s(tok));
 
     std::shared_ptr<DataStruct::Type> usertype = nullptr;
     std::shared_ptr<DataStruct::Type> ty;
@@ -1177,7 +1509,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_decl_spec(DataStruct::QUALITIFIER
         ty->align = align;
     return ty;
     err:
-    Error::errort(tok, "type mismatch: %s", Utils::tok2s(tok));
+    Error::errort(tok, "type mismatch: %s", lex->tok2s(tok));
 }
 std::shared_ptr<DataStruct::Type> Parser::read_typeof(){
     CHECK_LEX();
@@ -1226,8 +1558,8 @@ std::shared_ptr<DataStruct::Type> Parser::read_enum_def(){
         if (lex->is_keyword(tok, lex->get_keywords("}")))
             break;
         if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
-            Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
-        std::string name = *(tok.sval);
+            Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
+        std::string name = *tok.sval;
 
         if (macro->next(lex->get_keywords("=")))
             val = read_intexpr();
@@ -1238,17 +1570,17 @@ std::shared_ptr<DataStruct::Type> Parser::read_enum_def(){
             continue;
         if (macro->next(lex->get_keywords("}")))
             break;
-        Error::errort(macro->peek_token(), "',' or '}' expected, but got %s", Utils::tok2s(macro->peek_token()));
+        Error::errort(macro->peek_token(), "',' or '}' expected, but got %s", lex->tok2s(macro->peek_token()));
     }
     return TYPE_INT;
 }
 std::shared_ptr<DataStruct::Node> Parser::read_struct_field(const std::shared_ptr<DataStruct::Node> &struc){
     CHECK_CPP();
     if (struc->getTy()->kind != DataStruct::TYPE_KIND::KIND_STRUCT)
-        Error::error("struct expected, but got %s", Utils::node2s(struc));
+        Error::error("struct expected, but got %s", node2s(struc));
     auto name = macro->read_token();
     if (name.kind != DataStruct::TOKEN_TYPE::TIDENT)
-        Error::error("field name expected, but got %s", Utils::tok2s(name));
+        Error::error("field name expected, but got %s", lex->tok2s(name));
     std::shared_ptr<DataStruct::Type> field= nullptr;
     for (auto &e:struc->getTy()->fields)
         if (e.first==*name.sval){
@@ -1256,7 +1588,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_struct_field(const std::shared_pt
             break;
         }
     if (!field)
-        Error::error("struct has no such field: %s", Utils::tok2s(name));
+        Error::error("struct has no such field: %s", lex->tok2s(name));
     return ast_struct_ref(field, struc, *name.sval);
 }
 std::shared_ptr<DataStruct::Type> Parser::read_struct_def(){
@@ -1352,14 +1684,14 @@ std::vector<std::pair<std::string,std::shared_ptr<DataStruct::Type>>>  Parser::r
 //不能超过类型的存储范围
 int Parser::read_bitsize(std::string&name,const std::shared_ptr<DataStruct::Type>&type){
     if (!is_inttype(type))
-        Error::error("non-integer type cannot be a bitfield: %s", Utils::ty2s(type));
+        Error::error("non-integer type cannot be a bitfield: %s", ty2s(type));
     CHECK_CPP();
     CHECK_LEX();
     const DataStruct::Token tok = macro->peek_token();
     int r = read_intexpr();
     int maxsize = type->kind == DataStruct::TYPE_KIND::KIND_BOOL ? 1 : type->size * 8;
     if (r < 0 || maxsize < r)
-        Error::errort(tok, "invalid bitfield size for %s: %d", Utils::ty2s(type), r);
+        Error::errort(tok, "invalid bitfield size for %s: %d", ty2s(type), r);
     if (r == 0 && !name.empty())
         Error::errort(tok, "zero-width bitfield needs to be unnamed: %s", name);
     return r;
@@ -1373,9 +1705,9 @@ void Parser::fix_rectype_flexible_member(std::vector<std::pair<std::string,std::
             continue;
         if (ty->len==-1){
             if (i!=len-1)
-                Error::error("flexible member may only appear as the last member: %s %s", Utils::ty2s(ty), name);
+                Error::error("flexible member may only appear as the last member: %s %s", ty2s(ty), name);
             if (len==1)
-                Error::error("flexible member with no other fields: %s %s", Utils::ty2s(ty), name);
+                Error::error("flexible member with no other fields: %s %s", ty2s(ty), name);
             ty->len=0;
             ty->size=0;
         }
@@ -1496,12 +1828,12 @@ std::shared_ptr<DataStruct::Type> Parser::read_declarator(std::string *name,cons
     DataStruct::Token tok = macro->read_token();
     if (tok.kind == DataStruct::TOKEN_TYPE ::TIDENT) {
         if (type == DataStruct::DECL_TYPE::DECL_CAST)
-            Error::errort(tok, "identifier is not expected, but got %s", Utils::tok2s(tok));
+            Error::errort(tok, "identifier is not expected, but got %s", lex->tok2s(tok));
         *name = *tok.sval;
         return read_declarator_tail(basetype, params);
     }
     if (type == DataStruct::DECL_TYPE::DECL_BODY || type == DataStruct::DECL_TYPE::DECL_PARAM)
-        Error::errort(tok, "identifier, ( or * are expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "identifier, ( or * are expected, but got %s", lex->tok2s(tok));
     lex->retreat_token(tok);
     return read_declarator_tail(basetype, params);
 }
@@ -1604,7 +1936,7 @@ void Parser::read_declarator_params(std::vector<DataStruct::Type>&paramtypes, st
         if (lex->is_keyword(tok, lex->get_keywords(")")))
             return;
         if (!lex->is_keyword(tok, lex->get_keywords(",")))
-            Error::errort(tok, "comma expected, but got %s", Utils::tok2s(tok));
+            Error::errort(tok, "comma expected, but got %s", lex->tok2s(tok));
     }
 }
 std::shared_ptr<DataStruct::Type> Parser::read_func_param(std::string& name,bool typeonly){
@@ -1615,7 +1947,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_func_param(std::string& name,bool
     if (is_type(macro->peek_token())) {
         basety = read_decl_spec(&sclass);
     } else if (typeonly) {
-        Error::errort(macro->peek_token(), "type expected, but got %s", Utils::tok2s(macro->peek_token()));
+        Error::errort(macro->peek_token(), "type expected, but got %s", lex->tok2s(macro->peek_token()));
     }
     std::shared_ptr<DataStruct::Type> ty = read_declarator(&name, basety, nullptr, typeonly ? DataStruct::DECL_TYPE::DECL_PARAM_TYPEONLY : DataStruct::DECL_TYPE::DECL_PARAM);
     // C11 6.7.6.3 p7 A declaration of a parameter as ‘‘array of type’’ shall be adjusted to ‘‘qualified pointer to type’’
@@ -1634,12 +1966,12 @@ void Parser::read_declarator_params_oldstyle(std::vector<DataStruct::Node>*vars)
     for (;;) {
         const DataStruct::Token &tok = macro->read_token();
         if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
-            Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+            Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
         vars->emplace_back(*ast_lvar(TYPE_INT, *tok.sval));
         if (macro->next(lex->get_keywords(")")))
             return;
         if (!macro->next(lex->get_keywords(",")))
-            Error::errort(tok, "comma expected, but got %s", Utils::tok2s(macro->read_token()));
+            Error::errort(tok, "comma expected, but got %s", lex->tok2s(macro->read_token()));
     }
 }
 //确保类型不为void
@@ -1769,7 +2101,7 @@ void Parser::ensure_assignable(const std::shared_ptr<DataStruct::Type> &totype, 
         return;
     if (is_same_struct(totype, fromtype))
         return;
-    Error::error("incompatible kind: <%s> <%s>", Utils::ty2s(totype), Utils::ty2s(fromtype));
+    Error::error("incompatible kind: <%s> <%s>", ty2s(totype), ty2s(fromtype));
 }
 
 /**
@@ -1817,9 +2149,9 @@ std::shared_ptr<DataStruct::Node> Parser::wrap(const std::shared_ptr<DataStruct:
 // C11 6.3.1.8
 std::shared_ptr<DataStruct::Type> Parser::usual_arith_conv(std::shared_ptr<DataStruct::Type> t, std::shared_ptr<DataStruct::Type> u) {
     if (!is_arithtype(t))
-        Error::error("%s is not arithtype.",Utils::ty2s(t));
+        Error::error("%s is not arithtype.",ty2s(t));
     if (!is_arithtype(u))
-        Error::error("%s is not arithtype.",Utils::ty2s(u));
+        Error::error("%s is not arithtype.",ty2s(u));
     if (t->kind < u->kind) {
         auto tmp = t;
         t = u;
@@ -1828,13 +2160,13 @@ std::shared_ptr<DataStruct::Type> Parser::usual_arith_conv(std::shared_ptr<DataS
     if (is_flotype(t))
         return t;
     if (!is_inttype(t)||t->size < TYPE_INT->size)
-        Error::error("%s is not int type or size less than int",Utils::ty2s(t));
+        Error::error("%s is not int type or size less than int",ty2s(t));
     if (!is_inttype(u)||u->size < TYPE_INT->size)
-        Error::error("%s is not int type or size less than int",Utils::ty2s(u));
+        Error::error("%s is not int type or size less than int",ty2s(u));
     if (t->size > u->size)
         return t;
     if (t->size!=u->size)
-        Error::error("%s and %s are not the same size",Utils::ty2s(t),Utils::ty2s(u));
+        Error::error("%s and %s are not the same size",ty2s(t),ty2s(u));
     if (t->usig == u->usig)
         return t;
     decltype(t) r = std::make_shared<DataStruct::Type>(*t);
@@ -1978,7 +2310,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr_tail(std::shared_ptr
             node = conv(node);
             auto t = node->getTy();
             if (t->kind != DataStruct::TYPE_KIND::KIND_PTR || t->ptr->kind != DataStruct::TYPE_KIND::KIND_FUNC)
-                Error::errort(tok, "function expected, but got %s", Utils::node2s(node));
+                Error::errort(tok, "function expected, but got %s", node2s(node));
             node = read_funcall(node);
             continue;
         }
@@ -1992,7 +2324,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_postfix_expr_tail(std::shared_ptr
         }
         if (macro->next(DataStruct::AST_TYPE::OP_ARROW)) {
             if (node->getTy()->kind != DataStruct::TYPE_KIND::KIND_PTR)
-                Error::error("pointer type expected, but got %s %s", Utils::ty2s(node->getTy()), Utils::node2s(node));
+                Error::error("pointer type expected, but got %s %s", ty2s(node->getTy()), node2s(node));
             node = ast_uop(DataStruct::AST_TYPE::AST_DEREF, node->getTy()->ptr, node);
             node = read_struct_field(node);
             continue;
@@ -2038,7 +2370,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_label_addr(const DataStruct::Toke
     CHECK_CPP();
     auto tok2 = macro->read_token();
     if (tok2.kind != DataStruct::TOKEN_TYPE::TIDENT)
-        Error::errort(tok, "label name expected after &&, but got %s", Utils::tok2s(tok2));
+        Error::errort(tok, "label name expected after &&, but got %s", lex->tok2s(tok2));
     auto r = ast_label_addr(*tok2.sval);
     gotos.push_back(r);
     return r;
@@ -2053,7 +2385,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_unary_addr(){
 std::shared_ptr<DataStruct::Node> Parser::read_unary_deref(const DataStruct::Token &tok){
     auto operand = conv(read_cast_expr());
     if (operand->getTy()->kind != DataStruct::TYPE_KIND::KIND_PTR)
-        Error::errort(tok, "pointer type expected, but got %s", Utils::node2s(operand));
+        Error::errort(tok, "pointer type expected, but got %s", node2s(operand));
     if (operand->getTy()->ptr->kind == DataStruct::TYPE_KIND::KIND_FUNC)
         return operand;
     return ast_uop(DataStruct::AST_TYPE::AST_DEREF, operand->getTy()->ptr, operand);
@@ -2069,7 +2401,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_unary_bitnot(const DataStruct::To
     auto expr = read_cast_expr();
     expr = conv(expr);
     if (!is_inttype(expr->getTy()))
-        Error::errort(tok, "invalid use of ~: %s", Utils::node2s(expr));
+        Error::errort(tok, "invalid use of ~: %s", node2s(expr));
     return ast_uop(DataStruct::AST_TYPE::NEG, expr->getTy(), expr);
 }
 std::shared_ptr<DataStruct::Node> Parser::read_unary_lognot(){
@@ -2452,7 +2784,7 @@ void Parser::skip_to_brace() {
         auto ignore = read_assignment_expr();
         if (!ignore)
             return;
-        Error::warnt(tok, "excessive initializer: %s", Utils::node2s(ignore));
+        Error::warnt(tok, "excessive initializer: %s", node2s(ignore));
         maybe_skip_comma();
     }
 }
@@ -2514,11 +2846,11 @@ void Parser::read_struct_initializer_sub(std::vector<std::shared_ptr<DataStruct:
         if (lex->is_keyword(tok,lex->get_keywords("."))) {
             tok = macro->read_token();
             if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
-                Error::errort(tok, "malformed desginated initializer: %s", Utils::tok2s(tok));
+                Error::errort(tok, "malformed desginated initializer: %s", lex->tok2s(tok));
             fieldname = *tok.sval;
             fieldtype = find_key(ty->fields, fieldname);
             if (!fieldtype)
-                Error::errort(tok, "field does not exist: %s", Utils::tok2s(tok));
+                Error::errort(tok, "field does not exist: %s", lex->tok2s(tok));
 //            keys = dict_keys(ty->fields);
             i = 0;
             while (i < keys.size()) {
@@ -2754,7 +3086,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_stmt(){
 std::shared_ptr<DataStruct::Node> Parser::read_label(const DataStruct::Token &tok){
     const std::string &label = *tok.sval;
     if (labels.find(label) !=labels.end())
-        Error::errort(tok, "duplicate label: %s", Utils::tok2s(tok));
+        Error::errort(tok, "duplicate label: %s", lex->tok2s(tok));
     auto r = ast_label(label);
     labels[label]= r;
     return read_label_tail(r);
@@ -2925,7 +3257,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_do_stmt(){
     lbreak = obreak;
     auto tok = macro->read_token();
     if (!lex->is_keyword(tok, DataStruct::AST_TYPE::KWHILE))
-        Error::errort(tok, "'while' is expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "'while' is expected, but got %s", lex->tok2s(tok));
     macro->expect(lex->get_keywords("("));
     auto cond = read_boolean_expr();
     macro->expect(lex->get_keywords(")"));
@@ -3024,12 +3356,12 @@ std::shared_ptr<DataStruct::Node> Parser::read_goto_stmt() {
         auto tok = macro->peek_token();
         auto expr = read_cast_expr();
         if (expr->getTy()->kind != DataStruct::TYPE_KIND::KIND_PTR)
-            Error::errort(tok, "pointer expected for computed goto, but got %s", Utils::node2s(expr));
+            Error::errort(tok, "pointer expected for computed goto, but got %s", node2s(expr));
         return ast_computed_goto(expr);
     }
     auto tok = macro->read_token();
     if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
-        Error::errort(tok, "identifier expected, but got %s", Utils::tok2s(tok));
+        Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
     macro->expect(lex->get_keywords(";"));
     auto r = ast_goto(*tok.sval);
     gotos.push_back(r);

@@ -9,7 +9,6 @@
 #include <list>
 #include <algorithm>
 #include "Lex.h"
-#include "utils.h"
 class Parser;
 
 //using SpecialMacroHandler=void(*)(MacroPreprocessor* ,const DataStruct::Token&);

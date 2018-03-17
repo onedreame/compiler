@@ -8,7 +8,10 @@ file(REMOVE_RECURSE
   "CMakeFiles/ycc.dir/src/path.cpp.o"
   "CMakeFiles/ycc.dir/src/Token.cpp.o"
   "CMakeFiles/ycc.dir/src/utils.cpp.o"
+  "CMakeFiles/ycc.dir/test/funcTest.cpp.o"
   "CMakeFiles/ycc.dir/main.cpp.o"
+  "CMakeFiles/ycc.dir/src/encode.cpp.o"
+  "CMakeFiles/ycc.dir/src/code_gen.cpp.o"
   "ycc.pdb"
   "ycc"
 )

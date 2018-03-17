@@ -273,9 +273,33 @@ CMakeFiles/ycc.dir/src/utils.cpp.o.provides: CMakeFiles/ycc.dir/src/utils.cpp.o.
 CMakeFiles/ycc.dir/src/utils.cpp.o.provides.build: CMakeFiles/ycc.dir/src/utils.cpp.o
 
 
+CMakeFiles/ycc.dir/test/funcTest.cpp.o: CMakeFiles/ycc.dir/flags.make
+CMakeFiles/ycc.dir/test/funcTest.cpp.o: ../test/funcTest.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/ycc.dir/test/funcTest.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/test/funcTest.cpp.o -c /home/yk/compiler/ycc/test/funcTest.cpp
+
+CMakeFiles/ycc.dir/test/funcTest.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/test/funcTest.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/test/funcTest.cpp > CMakeFiles/ycc.dir/test/funcTest.cpp.i
+
+CMakeFiles/ycc.dir/test/funcTest.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/test/funcTest.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/test/funcTest.cpp -o CMakeFiles/ycc.dir/test/funcTest.cpp.s
+
+CMakeFiles/ycc.dir/test/funcTest.cpp.o.requires:
+
+.PHONY : CMakeFiles/ycc.dir/test/funcTest.cpp.o.requires
+
+CMakeFiles/ycc.dir/test/funcTest.cpp.o.provides: CMakeFiles/ycc.dir/test/funcTest.cpp.o.requires
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/test/funcTest.cpp.o.provides.build
+.PHONY : CMakeFiles/ycc.dir/test/funcTest.cpp.o.provides
+
+CMakeFiles/ycc.dir/test/funcTest.cpp.o.provides.build: CMakeFiles/ycc.dir/test/funcTest.cpp.o
+
+
 CMakeFiles/ycc.dir/main.cpp.o: CMakeFiles/ycc.dir/flags.make
 CMakeFiles/ycc.dir/main.cpp.o: ../main.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/ycc.dir/main.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/ycc.dir/main.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/main.cpp.o -c /home/yk/compiler/ycc/main.cpp
 
 CMakeFiles/ycc.dir/main.cpp.i: cmake_force
@@ -297,6 +321,54 @@ CMakeFiles/ycc.dir/main.cpp.o.provides: CMakeFiles/ycc.dir/main.cpp.o.requires
 CMakeFiles/ycc.dir/main.cpp.o.provides.build: CMakeFiles/ycc.dir/main.cpp.o
 
 
+CMakeFiles/ycc.dir/src/encode.cpp.o: CMakeFiles/ycc.dir/flags.make
+CMakeFiles/ycc.dir/src/encode.cpp.o: ../src/encode.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object CMakeFiles/ycc.dir/src/encode.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/encode.cpp.o -c /home/yk/compiler/ycc/src/encode.cpp
+
+CMakeFiles/ycc.dir/src/encode.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/encode.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/encode.cpp > CMakeFiles/ycc.dir/src/encode.cpp.i
+
+CMakeFiles/ycc.dir/src/encode.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/encode.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/encode.cpp -o CMakeFiles/ycc.dir/src/encode.cpp.s
+
+CMakeFiles/ycc.dir/src/encode.cpp.o.requires:
+
+.PHONY : CMakeFiles/ycc.dir/src/encode.cpp.o.requires
+
+CMakeFiles/ycc.dir/src/encode.cpp.o.provides: CMakeFiles/ycc.dir/src/encode.cpp.o.requires
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/encode.cpp.o.provides.build
+.PHONY : CMakeFiles/ycc.dir/src/encode.cpp.o.provides
+
+CMakeFiles/ycc.dir/src/encode.cpp.o.provides.build: CMakeFiles/ycc.dir/src/encode.cpp.o
+
+
+CMakeFiles/ycc.dir/src/code_gen.cpp.o: CMakeFiles/ycc.dir/flags.make
+CMakeFiles/ycc.dir/src/code_gen.cpp.o: ../src/code_gen.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/ycc.dir/src/code_gen.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/ycc.dir/src/code_gen.cpp.o -c /home/yk/compiler/ycc/src/code_gen.cpp
+
+CMakeFiles/ycc.dir/src/code_gen.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ycc.dir/src/code_gen.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/yk/compiler/ycc/src/code_gen.cpp > CMakeFiles/ycc.dir/src/code_gen.cpp.i
+
+CMakeFiles/ycc.dir/src/code_gen.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ycc.dir/src/code_gen.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/yk/compiler/ycc/src/code_gen.cpp -o CMakeFiles/ycc.dir/src/code_gen.cpp.s
+
+CMakeFiles/ycc.dir/src/code_gen.cpp.o.requires:
+
+.PHONY : CMakeFiles/ycc.dir/src/code_gen.cpp.o.requires
+
+CMakeFiles/ycc.dir/src/code_gen.cpp.o.provides: CMakeFiles/ycc.dir/src/code_gen.cpp.o.requires
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/code_gen.cpp.o.provides.build
+.PHONY : CMakeFiles/ycc.dir/src/code_gen.cpp.o.provides
+
+CMakeFiles/ycc.dir/src/code_gen.cpp.o.provides.build: CMakeFiles/ycc.dir/src/code_gen.cpp.o
+
+
 # Object files for target ycc
 ycc_OBJECTS = \
 "CMakeFiles/ycc.dir/src/buffer.cpp.o" \
@@ -308,7 +380,10 @@ ycc_OBJECTS = \
 "CMakeFiles/ycc.dir/src/path.cpp.o" \
 "CMakeFiles/ycc.dir/src/Token.cpp.o" \
 "CMakeFiles/ycc.dir/src/utils.cpp.o" \
-"CMakeFiles/ycc.dir/main.cpp.o"
+"CMakeFiles/ycc.dir/test/funcTest.cpp.o" \
+"CMakeFiles/ycc.dir/main.cpp.o" \
+"CMakeFiles/ycc.dir/src/encode.cpp.o" \
+"CMakeFiles/ycc.dir/src/code_gen.cpp.o"
 
 # External object files for target ycc
 ycc_EXTERNAL_OBJECTS =
@@ -322,10 +397,13 @@ ycc: CMakeFiles/ycc.dir/src/parser.cpp.o
 ycc: CMakeFiles/ycc.dir/src/path.cpp.o
 ycc: CMakeFiles/ycc.dir/src/Token.cpp.o
 ycc: CMakeFiles/ycc.dir/src/utils.cpp.o
+ycc: CMakeFiles/ycc.dir/test/funcTest.cpp.o
 ycc: CMakeFiles/ycc.dir/main.cpp.o
+ycc: CMakeFiles/ycc.dir/src/encode.cpp.o
+ycc: CMakeFiles/ycc.dir/src/code_gen.cpp.o
 ycc: CMakeFiles/ycc.dir/build.make
 ycc: CMakeFiles/ycc.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Linking CXX executable ycc"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Linking CXX executable ycc"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/ycc.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -342,7 +420,10 @@ CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/parser.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/path.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/Token.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/utils.cpp.o.requires
+CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/test/funcTest.cpp.o.requires
 CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/main.cpp.o.requires
+CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/encode.cpp.o.requires
+CMakeFiles/ycc.dir/requires: CMakeFiles/ycc.dir/src/code_gen.cpp.o.requires
 
 .PHONY : CMakeFiles/ycc.dir/requires
 

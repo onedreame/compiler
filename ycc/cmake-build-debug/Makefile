@@ -258,6 +258,60 @@ src/buffer.cpp.s:
 	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/buffer.cpp.s
 .PHONY : src/buffer.cpp.s
 
+src/code_gen.o: src/code_gen.cpp.o
+
+.PHONY : src/code_gen.o
+
+# target to build an object file
+src/code_gen.cpp.o:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/code_gen.cpp.o
+.PHONY : src/code_gen.cpp.o
+
+src/code_gen.i: src/code_gen.cpp.i
+
+.PHONY : src/code_gen.i
+
+# target to preprocess a source file
+src/code_gen.cpp.i:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/code_gen.cpp.i
+.PHONY : src/code_gen.cpp.i
+
+src/code_gen.s: src/code_gen.cpp.s
+
+.PHONY : src/code_gen.s
+
+# target to generate assembly for a file
+src/code_gen.cpp.s:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/code_gen.cpp.s
+.PHONY : src/code_gen.cpp.s
+
+src/encode.o: src/encode.cpp.o
+
+.PHONY : src/encode.o
+
+# target to build an object file
+src/encode.cpp.o:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/encode.cpp.o
+.PHONY : src/encode.cpp.o
+
+src/encode.i: src/encode.cpp.i
+
+.PHONY : src/encode.i
+
+# target to preprocess a source file
+src/encode.cpp.i:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/encode.cpp.i
+.PHONY : src/encode.cpp.i
+
+src/encode.s: src/encode.cpp.s
+
+.PHONY : src/encode.s
+
+# target to generate assembly for a file
+src/encode.cpp.s:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/encode.cpp.s
+.PHONY : src/encode.cpp.s
+
 src/error.o: src/error.cpp.o
 
 .PHONY : src/error.o
@@ -393,6 +447,33 @@ src/utils.cpp.s:
 	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/src/utils.cpp.s
 .PHONY : src/utils.cpp.s
 
+test/funcTest.o: test/funcTest.cpp.o
+
+.PHONY : test/funcTest.o
+
+# target to build an object file
+test/funcTest.cpp.o:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/test/funcTest.cpp.o
+.PHONY : test/funcTest.cpp.o
+
+test/funcTest.i: test/funcTest.cpp.i
+
+.PHONY : test/funcTest.i
+
+# target to preprocess a source file
+test/funcTest.cpp.i:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/test/funcTest.cpp.i
+.PHONY : test/funcTest.cpp.i
+
+test/funcTest.s: test/funcTest.cpp.s
+
+.PHONY : test/funcTest.s
+
+# target to generate assembly for a file
+test/funcTest.cpp.s:
+	$(MAKE) -f CMakeFiles/ycc.dir/build.make CMakeFiles/ycc.dir/test/funcTest.cpp.s
+.PHONY : test/funcTest.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -417,6 +498,12 @@ help:
 	@echo "... src/buffer.o"
 	@echo "... src/buffer.i"
 	@echo "... src/buffer.s"
+	@echo "... src/code_gen.o"
+	@echo "... src/code_gen.i"
+	@echo "... src/code_gen.s"
+	@echo "... src/encode.o"
+	@echo "... src/encode.i"
+	@echo "... src/encode.s"
 	@echo "... src/error.o"
 	@echo "... src/error.i"
 	@echo "... src/error.s"
@@ -432,6 +519,9 @@ help:
 	@echo "... src/utils.o"
 	@echo "... src/utils.i"
 	@echo "... src/utils.s"
+	@echo "... test/funcTest.o"
+	@echo "... test/funcTest.i"
+	@echo "... test/funcTest.s"
 .PHONY : help
 
 

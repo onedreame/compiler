@@ -96,7 +96,16 @@
 		<Unit filename="/home/yk/compiler/ycc/include/buffer.h">
 			<Option target="ycc"/>
 		</Unit>
+		<Unit filename="/home/yk/compiler/ycc/include/code_gen.h">
+			<Option target="ycc"/>
+		</Unit>
 		<Unit filename="/home/yk/compiler/ycc/include/colors.h">
+			<Option target="ycc"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/ycc/include/configuration.h">
+			<Option target="ycc"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/ycc/include/encode.h">
 			<Option target="ycc"/>
 		</Unit>
 		<Unit filename="/home/yk/compiler/ycc/include/enumerate.h">
@@ -138,6 +147,12 @@
 		<Unit filename="/home/yk/compiler/ycc/src/buffer.cpp">
 			<Option target="ycc"/>
 		</Unit>
+		<Unit filename="/home/yk/compiler/ycc/src/code_gen.cpp">
+			<Option target="ycc"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/ycc/src/encode.cpp">
+			<Option target="ycc"/>
+		</Unit>
 		<Unit filename="/home/yk/compiler/ycc/src/error.cpp">
 			<Option target="ycc"/>
 		</Unit>
@@ -151,6 +166,12 @@
 			<Option target="ycc"/>
 		</Unit>
 		<Unit filename="/home/yk/compiler/ycc/src/utils.cpp">
+			<Option target="ycc"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/ycc/test/funcTest.cpp">
+			<Option target="ycc"/>
+		</Unit>
+		<Unit filename="/home/yk/compiler/ycc/test/funcTest.h">
 			<Option target="ycc"/>
 		</Unit>
 		<Unit filename="/home/yk/compiler/ycc/CMakeLists.txt">

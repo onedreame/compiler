@@ -15,7 +15,22 @@
 #include "enumerate.h"
 #include "Token.h"
 
+namespace Utils{
+    extern std::string infile;
+    extern std::string outfile;
+    extern std::string asmfile;
+    extern bool dumpast;
+    extern bool cpponly;
+    extern bool dumpasm;
+    extern bool dontlink;
+    extern bool dumpstack;
+    extern bool dumpsource;
+    extern std::vector<std::string> cppdefs;  //保存D参数定义的宏
+    extern std::vector<std::string> tmpfiles;
 
+    extern bool dump;
+    extern std::string BUILD_DIR;
+}
 class Lex
 {
 public:
@@ -44,6 +59,7 @@ public:
     DataStruct::Token lex_string(std::string&);
     static std::shared_ptr<Lex> Instance();
     bool in_keyword(const DataStruct::Token& tok){ return keywords.find(*tok.sval)!=keywords.end();}
+    std::string tok2s(const DataStruct::Token &tok);
 
     void debug(){
         std::cout<<"________________"<<std::endl;
@@ -72,6 +88,7 @@ private:
     Lex&operator=(const Lex&)= delete;
     Lex&operator=(Lex&&)= delete;
     void retreat(int c);
+    std::string encoding_prefix(DataStruct::ENCODE enc);
     void mark(){
         cur.line=files.back()->line;
         cur.column=files.back()->column;

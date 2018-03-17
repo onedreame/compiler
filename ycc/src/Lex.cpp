@@ -25,6 +25,61 @@ std::shared_ptr<DataStruct::File > Lex::current_file(){
         return nullptr;
     return files.back();
 }
+std::string Lex::encoding_prefix(DataStruct::ENCODE enc) {
+    switch (enc) {
+        case DataStruct::ENCODE::ENC_CHAR16:
+            return "u";
+        case DataStruct::ENCODE::ENC_CHAR32:
+            return "U";
+        case DataStruct::ENCODE::ENC_UTF8:
+            return "u8";
+        case DataStruct::ENCODE::ENC_WCHAR:
+            return "L";
+    }
+    return "";
+}
+
+std::string Lex::tok2s(const DataStruct::Token &tok) {
+    if (tok.kind == DataStruct::TOKEN_TYPE::TPLACEHOLDER)
+        return "(null)";
+    switch (tok.kind) {
+        case DataStruct::TOKEN_TYPE::TIDENT:
+            return *(tok.sval);
+        case DataStruct::TOKEN_TYPE::TKEYWORD:
+            switch (tok.id) {
+#define op(id, str)         case DataStruct::AST_TYPE::id: return str;
+#define keyword(id, str, _) case DataStruct::AST_TYPE::id: return str;
+
+#include "../include/keyword.inc"
+
+#undef keyword
+#undef op
+                default:
+                    return Lex::get_keywords_string(tok.id);
+            }
+        case DataStruct::TOKEN_TYPE::TCHAR:
+            return Utils::format("%s'%s'",
+                                 encoding_prefix(tok.enc),
+                                 Utils::quote_char(tok.c));
+        case DataStruct::TOKEN_TYPE::TNUMBER:
+            return *(tok.sval);
+        case DataStruct::TOKEN_TYPE::TSTRING:
+            return Utils::format("%s\"%s\"",
+                          encoding_prefix(tok.enc),
+                          Utils::parse_cstring((*(tok.sval)).c_str()));
+        case DataStruct::TOKEN_TYPE::TEOF:
+            return "(eof)";
+        case DataStruct::TOKEN_TYPE::TINVALID:
+            return std::string{static_cast<char >(tok.c)};
+        case DataStruct::TOKEN_TYPE::TNEWLINE:
+            return "(newline)";
+        case DataStruct::TOKEN_TYPE::TSPACE:
+            return "(space)";
+        case DataStruct::TOKEN_TYPE::TMACRO_PARAM:
+            return "(macro-param)";
+    }
+    Error::error("internal error: unknown token kind: %d", static_cast<int>(tok.kind));
+}
 DataStruct::AST_TYPE Lex::get_keywords(const std::string&s) const {
     if (keywords.find(s)!=keywords.end())
         return keywords.at(s);
@@ -517,7 +572,7 @@ void Lex::init_keywords() {
     keywords["!"]=DataStruct::AST_TYPE::EXCLAMATION;
     keywords["&"]=DataStruct::AST_TYPE::AND;
     keywords["|"]=DataStruct::AST_TYPE::OR;
-    keywords["^"]=DataStruct::AST_TYPE::NOT;
+    keywords["^"]=DataStruct::AST_TYPE::XOR;
     keywords["~"]=DataStruct::AST_TYPE::NEG;
     keywords["?"]=DataStruct::AST_TYPE::QUES;
     keywords[";"]=DataStruct::AST_TYPE::SEMI;
@@ -549,7 +604,7 @@ void Lex::init_keywords() {
     rkeywords[static_cast<int >(DataStruct::AST_TYPE::EXCLAMATION)]="!";
     rkeywords[static_cast<int >(DataStruct::AST_TYPE::AND)]="&";
     rkeywords[static_cast<int >(DataStruct::AST_TYPE::OR)]="|";
-    rkeywords[static_cast<int >(DataStruct::AST_TYPE::NOT)]="^";
+    rkeywords[static_cast<int >(DataStruct::AST_TYPE::XOR)]="^";
     rkeywords[static_cast<int >(DataStruct::AST_TYPE::NEG)]="~";
     rkeywords[static_cast<int >(DataStruct::AST_TYPE::QUES)]="?";
     rkeywords[static_cast<int >(DataStruct::AST_TYPE::SEMI)]=";";
