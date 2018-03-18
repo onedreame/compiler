@@ -267,7 +267,7 @@ void CodeGen::emit_toint(const std::shared_ptr<DataStruct::Type> &ty) {
 /**
  * load data from memory to register
  * @param ty
- * @param base memory label
+ * @param base stack base pointer
  * @param off
  */
 void CodeGen::emit_lload(const std::shared_ptr<DataStruct::Type> &ty, const std::string &base, int off) {
@@ -567,7 +567,7 @@ void CodeGen::emit_binop(const std::shared_ptr<DataStruct::Node> &node) {
 void CodeGen::emit_save_literal(const std::shared_ptr<DataStruct::Node> &node,
                        const std::shared_ptr<DataStruct::Type> &totype, int off) {
     switch (totype->kind) {
-        case DataStruct::TYPE_KIND::KIND_BOOL:  emit("movb $%d, %d(#rbp)", !!node->ival, off); break;
+        case DataStruct::TYPE_KIND::KIND_BOOL:  emit("movb $%d, %d(#rbp)", node->ival!=0, off); break;
         case DataStruct::TYPE_KIND::KIND_CHAR:  emit("movb $%d, %d(#rbp)", node->ival, off); break;
         case DataStruct::TYPE_KIND::KIND_SHORT: emit("movw $%d, %d(#rbp)", node->ival, off); break;
         case DataStruct::TYPE_KIND::KIND_INT:   emit("movl $%d, %d(#rbp)", node->ival, off); break;
@@ -579,7 +579,7 @@ void CodeGen::emit_save_literal(const std::shared_ptr<DataStruct::Node> &node,
             break;
         }
         case DataStruct::TYPE_KIND::KIND_FLOAT: {
-            float fval = node->fval;
+            auto fval = node->fval;
             emit("movl $%u, %d(#rbp)", *(uint32_t *)&fval, off);
             break;
         }
@@ -639,7 +639,11 @@ void CodeGen::emit_copy_struct(const std::shared_ptr<DataStruct::Node> &left,
     pop("r11");
     pop("rcx");
 }
-
+int cmpinit(const void *x, const void *y) {
+    Node *a = *(Node **)x;
+    Node *b = *(Node **)y;
+    return a->initoff - b->initoff;
+}
 
 void CodeGen::emit_fill_holes(const std::vector<std::shared_ptr<DataStruct::Node>> &inits, int off, int totalsize) {
     // If at least one of the fields in a variable are initialized,
@@ -1244,7 +1248,7 @@ void CodeGen::emit_expr(const std::shared_ptr<DataStruct::Node> &node) {
         case DataStruct::AST_TYPE::AND: emit_bitand(node); return;
         case DataStruct::AST_TYPE::OR: emit_bitor(node); return;
         case DataStruct::AST_TYPE::NEG: emit_bitnot(node); return;
-        case DataStruct::AST_TYPE::OP_LOGAND: emit_logand(node); return;
+        case DataStruct::AST_TYPE: :OP_LOGAND: emit_logand(node); return;
         case DataStruct::AST_TYPE::OP_LOGOR:  emit_logor(node); return;
         case DataStruct::AST_TYPE::OP_CAST:   emit_cast(node); return;
         case DataStruct::AST_TYPE::COMMA: emit_comma(node); return;

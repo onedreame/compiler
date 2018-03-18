@@ -353,6 +353,11 @@ void CodeGen::emit_pointer_arith(DataStruct::AST_TYPE kind, const std::shared_pt
     }
     pop("rcx");
 }
+/**
+ * 先以4字节填充，不足4字节的部分再以单字节填充
+ * @param start 开始地址
+ * @param end 结束地址
+ */
 void CodeGen::emit_zero_filler(int start, int end) {
     SAVE;
     for (; start <= end - 4; start += 4)
@@ -360,6 +365,10 @@ void CodeGen::emit_zero_filler(int start, int end) {
     for (; start < end; start++)
         emit("movb $0, %d(#rbp)", start);
 }
+/**
+ *
+ * @param node
+ */
 void CodeGen::ensure_lvar_init(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     if (node->getKind() != DataStruct::AST_TYPE::AST_LVAR)
@@ -564,6 +573,12 @@ void CodeGen::emit_binop(const std::shared_ptr<DataStruct::Node> &node) {
     else
         Error::error("internal error: %s", _parser->node2s(node));
 }
+/**
+ * 根据node.kind的类型决定把ival，fval，等送到off指定的地址
+ * @param node
+ * @param totype
+ * @param off
+ */
 void CodeGen::emit_save_literal(const std::shared_ptr<DataStruct::Node> &node,
                        const std::shared_ptr<DataStruct::Type> &totype, int off) {
     switch (totype->kind) {
@@ -640,7 +655,12 @@ void CodeGen::emit_copy_struct(const std::shared_ptr<DataStruct::Node> &left,
     pop("rcx");
 }
 
-
+/**
+ * 根据我们读取初始化参数时设置的偏移值，把未初始化的部分初始化为0
+ * @param inits
+ * @param off
+ * @param totalsize
+ */
 void CodeGen::emit_fill_holes(const std::vector<std::shared_ptr<DataStruct::Node>> &inits, int off, int totalsize) {
     // If at least one of the fields in a variable are initialized,
     // unspecified fields has to be initialized with 0.
@@ -698,18 +718,39 @@ void CodeGen::set_reg_nums(const std::vector<std::shared_ptr<DataStruct::Node>> 
             numgp++;
     }
 }
+/**
+ * test %rax,%rax
+ * je label
+ * @param label
+ */
 void CodeGen::emit_je(const std::string &label) {
     emit("test #rax, #rax");
     emit("je %s", label);
 }
+/*
+ * 生成汇编  label：
+ */
 void CodeGen::emit_label(const std::string &label) {
     emit("%s:", label);
 }
+/**
+ * 生成汇编： jmp label
+ * @param label
+ */
 void CodeGen::emit_jmp(const std::string &label) {
     emit("jmp %s", label);
 }
 /**
- * 整型对西那个
+ * 整型对象， mov #ival %rax
+ * 浮点型对象：
+ *     float：格式为 .data
+ *                      label:
+ *                      .long fval
+ *                  .text  (首次的时候会出现这些标签）
+ *            然后movss label(rip)  #xmm0
+ *     double:和上面基本一样，就是long变成了quad，movss变成了movsd
+ * string：和上面基本一样，就是quad变成了.string sval,movsd变成了lea
+ * 其他情况则是错误
  * @param node
  */
 void CodeGen::emit_literal(const std::shared_ptr<DataStruct::Node> &node) {
@@ -853,6 +894,13 @@ void CodeGen::maybe_print_source_loc(const std::shared_ptr<DataStruct::Node> &no
     last_loc = loc;
 }
 
+/**
+ * lvalue的处理流程
+ * （1)进行初始化处理，如果有初始化node，那么根据逻辑偏移来初始化，未初始化的部分填充为0,
+ * （2)字面值对象如果不是位域，那么直接把iva，fval等mov到逻辑偏移处
+ * （3)不然则mov数据到rax，期间可能会转化为bool，也可能进行位域处理，然后吧经过处理的结果mov到偏移处
+ * @param node
+ */
 void CodeGen::emit_lvar(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     ensure_lvar_init(node);
