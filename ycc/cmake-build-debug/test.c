@@ -1,4 +1,0 @@
-#include<%%>
-xx
-#include<%>
-xx

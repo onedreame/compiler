@@ -1,3 +1,0 @@
-/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/edit_cache.dir
-/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir
