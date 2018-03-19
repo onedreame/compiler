@@ -1,4 +1,4 @@
-# Install script for directory: /home/yk/compiler/ycc
+# Install script for directory: /media/yk/e/projects/compiler/compiler/ycc
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -40,5 +40,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/yk/compiler/ycc/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

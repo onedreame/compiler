@@ -1,2 +1,3 @@
 Options: 
-CMake: 3.8.2@/usr/local/clion-2017.2.1/bin/cmake/bin/cmake
+
+Options:

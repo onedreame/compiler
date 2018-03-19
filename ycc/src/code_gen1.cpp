@@ -266,6 +266,12 @@ void CodeGen::emit_toint(const std::shared_ptr<DataStruct::Type> &ty) {
 }
 /**
  * load data from memory to register
+ * type:
+ * (1) array: lea off(%base), %rax
+ * (2) float: movss off(%base) %xmm0
+ * (3) double,long double: movsd off(%base),%xmm0
+ * (4) int, movzbl.. off(%base), %rax
+ * 还可能进行bit早错
  * @param ty
  * @param base memory label
  * @param off
@@ -335,6 +341,16 @@ void CodeGen::emit_assign_deref(const std::shared_ptr<DataStruct::Node> &var) {
     emit_expr(var->unop);
     do_emit_assign_deref(var->unop->getTy()->ptr, 0);
 }
+/**
+ * 指针运算
+ * emit_expr(left);
+ * push("rcx");
+ * push("rax");
+ * emit_expr(right);
+ * @param kind
+ * @param left
+ * @param right
+ */
 void CodeGen::emit_pointer_arith(DataStruct::AST_TYPE kind, const std::shared_ptr<DataStruct::Node> &left, const std::shared_ptr<DataStruct::Node> &right) {
     SAVE;
     emit_expr(left);
@@ -400,6 +416,23 @@ void CodeGen::emit_assign_struct_ref(const std::shared_ptr<DataStruct::Node> &st
             Error::error("internal error: %s", _parser->node2s(struc));
     }
 }
+/**
+ * 加载struct引用，这里要分成如下几种情况，根据struc的kind
+ * （1）AST_LVAR
+ * ensure_lvar_init(struc);
+ * movzsl... struc->loff + field->offset + off(%rbp) %rax
+ * 这种情况定义的是lvalue，所以直接从内存中取值
+ * （2）AST_GVAR
+ * gvalue则是从label+fiels->offset(%rip)取值
+ * （3）AST_STRUCT_REF
+ * 这种情况说明当前是嵌套的struct
+ * emit_load_struct_ref(struc->struc, field, struc->getTy()->offset + off);
+ * （4）AST_DEREF  ->
+ * 需要先分析出struc->unop,也就是该struct的基址，然后从基址加偏移处取出该值
+ * @param struc
+ * @param field
+ * @param off
+ */
 void CodeGen::emit_load_struct_ref(const std::shared_ptr<DataStruct::Node> &struc,
                           const std::shared_ptr<DataStruct::Type> &field, int off) {
     SAVE;
@@ -435,6 +468,21 @@ void CodeGen::emit_store(const std::shared_ptr<DataStruct::Node> &var) {
         default: Error::error("internal error");
     }
 }
+/**
+ * 按ty类型分类：
+ * （1）floattype
+ * push %xmm1
+ * xorpd %xmm1,%xmm1
+ * ucomiss(d) %xmm1,%xmm0
+ * setne %al
+ * pop %xmm1
+ * movzb %al,%eax
+ * (2)
+ * cmp $0, %rax
+ * setne %al
+ * movzb %al,%eax
+ * @param ty
+ */
 void CodeGen::emit_to_bool(const std::shared_ptr<DataStruct::Type> &ty) {
     SAVE;
     if (_parser->is_flotype(ty)) {
@@ -477,6 +525,10 @@ void CodeGen::emit_comp(const std::string &inst, const std::string &usiginst, co
         emit("%s #al", inst);
     emit("movzb #al, #eax");
 }
+/**
+ * DIV:  分子存放在RDX：RAX，结果也存放在这两个寄存器里面，注意除法是无符号数和有福好数的时候最高位的拓展
+ * @param node
+ */
 void CodeGen::emit_binop_int_arith(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     std::string op;
@@ -501,11 +553,11 @@ void CodeGen::emit_binop_int_arith(const std::shared_ptr<DataStruct::Node> &node
             emit("xor #edx, #edx");
             emit("div #rcx");
         } else {
-            emit("cqto");
+            emit("cqto");   //符号拓展
             emit("idiv #rcx");
         }
         if (node->getKind() == DataStruct::AST_TYPE::LEFT)
-            emit("mov #edx, #eax");
+            emit("mov #edx, #eax");     //这么看eax保存商，edx保存余数
     } else if (node->getKind() == DataStruct::AST_TYPE::OP_SAL || node->getKind() == DataStruct::AST_TYPE::OP_SAR
                || node->getKind() == DataStruct::AST_TYPE::OP_SHR) {
         emit("%s #cl, #%s", op, get_int_reg(node->left->getTy(), 'a'));
@@ -531,6 +583,17 @@ void CodeGen::emit_binop_float_arith(const std::shared_ptr<DataStruct::Node> &no
     pop_xmm(0);
     emit("%s #xmm1, #xmm0", op);
 }
+/**
+ * (1)int->float                    cvtsi2ss #eax, #xmm0
+ * (2)int->double                   cvtsi2sd #eax, #xmm0
+ * (3)float->double                 cvtps2pd #xmm0, #xmm0
+ * (4)double,long double-> float    cvtpd2ps #xmm0, #xmm0
+ * (5)bool
+ * (6)int->int                      符号拓展或无符号拓展
+ * (7)int                           from(float):cvttss2si #xmm0, #eax   (double)cvttsd2si #xmm0, #eax
+ * @param to
+ * @param from
+ */
 void CodeGen::emit_load_convert(const std::shared_ptr<DataStruct::Type> &to, const std::shared_ptr<DataStruct::Type> &from) {
     SAVE;
     if (_parser->is_inttype(from) && to->kind == DataStruct::TYPE_KIND::KIND_FLOAT)
@@ -549,6 +612,10 @@ void CodeGen::emit_load_convert(const std::shared_ptr<DataStruct::Type> &to, con
     else if (_parser->is_inttype(to))
         emit_toint(from);
 }
+/**
+ * leave
+ * ret
+ */
 void CodeGen::emit_ret() {
     SAVE;
     emit("leave");
@@ -608,6 +675,18 @@ void CodeGen::emit_save_literal(const std::shared_ptr<DataStruct::Node> &node,
             Error::error("internal error: <%s> <%s> <%d>", _parser->node2s(node), _parser->ty2s(totype), off);
     }
 }
+/**
+ * 取地址操作，只有下面几种node可以取地址
+ * （1）AST_LVAR：emit("lea %d(#rbp), #rax", node->loff);
+ * （2）AST_GVAR：mit("lea %s(#rip), #rax", node->glabel); 所以全局对象是从label处取地址的
+ * （3）AST_DEREF:解引用node，此时该node代表要对起变量unop进行解引用操作，因而需要分析unop
+ * （4）AST_STRUCT_REF：这里要结合parser来分析，因而对于该类node而言，他的struc可能是个AST_DEREF node，也有可能就是个STRUCT
+ * 对于前者，采用情况（3）处理，对于后者则采用（1）或（2）处理，总之上面两种情况就是取得了基址，还需要一步
+ * emit("add $%d, #rax", node->getTy()->offset);
+ * 来获得成员变量的地址
+ * （5）函数：emit("lea %s(#rip), #rax", node->fname);
+ * @param node
+ */
 void CodeGen::emit_addr(const std::shared_ptr<DataStruct::Node> &node) {
     switch (node->getKind()) {
         case DataStruct::AST_TYPE::AST_LVAR:
@@ -809,9 +888,9 @@ void CodeGen::emit_literal(const std::shared_ptr<DataStruct::Node> &node) {
     }
 }
 /**
- * 按照'\r\n',\r,\n 做分隔符分割字符串，返回每段的起点
+ * 按照'\r\n',\r,\n 做分隔符分割字符串
  * @param buf 分割的字符串
- * @return 各段的开头位置
+ * @return 分好的每一段
  */
 std::vector<std::string> CodeGen::split(std::string &buf) {
     std::vector<std::string > ref;
@@ -835,9 +914,9 @@ std::vector<std::string> CodeGen::split(std::string &buf) {
 }
 
 /**
- * 读取文件的内容，并按照"escape r escape n","escaoe r","escape n" 三种分隔符分割成段，返回每段的开始下标
+ * 读取文件的内容，并按照"escape r escape n","escaoe r","escape n" 三种分隔符分割成段
  * @param file 读取的文件
- * @return 每段的开头下标
+ * @return 分好的段
  */
 std::vector<std::string> CodeGen::read_source_file(const std::string &file) {
     std::ifstream ifstream(file);
@@ -899,6 +978,14 @@ void CodeGen::maybe_print_source_loc(const std::shared_ptr<DataStruct::Node> &no
  * （1)进行初始化处理，如果有初始化node，那么根据逻辑偏移来初始化，未初始化的部分填充为0,
  * （2)字面值对象如果不是位域，那么直接把iva，fval等mov到逻辑偏移处
  * （3)不然则mov数据到rax，期间可能会转化为bool，也可能进行位域处理，然后吧经过处理的结果mov到偏移处
+ * 上面处理完以后就可以取数了，这里要根据node 的type进行操作，
+ * （1）array:emit("lea %d(#%s), #rax", off, base);
+ * (2)KIND_FLOAT:emit("movss %d(#%s), #xmm0", off, base);
+ * (3)KIND_DOUBLE,KIND_LDOUBLE:emit("movsd %d(#%s), #xmm0", off, base)
+ * (4)int family:
+ * auto inst = get_load_inst(ty);
+ * emit("%s %d(#%s), #rax", inst, off, base);   (struct或者union也都是在栈中保存的基址，因而我们需要知道基址）
+ * maybe_emit_bitshift_load(ty);
  * @param node
  */
 void CodeGen::emit_lvar(const std::shared_ptr<DataStruct::Node> &node) {
@@ -906,12 +993,36 @@ void CodeGen::emit_lvar(const std::shared_ptr<DataStruct::Node> &node) {
     ensure_lvar_init(node);
     emit_lload(node->getTy(), "rbp", node->loff);
 }
-
+/**
+ * node->type:
+ * array:
+ * (1) off!=0   lea glabel+off(%rip), %rax
+ * (2) off==0   lea glabel(%rip), %rax
+ * 其他：
+ * (1)movszb,movzbl.. glabel+off(%rip), %rax
+ * @param node
+ */
 void CodeGen::emit_gvar(const std::shared_ptr<DataStruct::Node> node) {
     SAVE;
     emit_gload(node->getTy(), node->glabel, 0);
 }
-
+/**
+ * gcc的拓展特性，首先取得参数的level，存放于rax中，然后
+ *     push %r11
+ *     mov level %rax   (level未必是int，因而需要分析一下确定采用的哪个)
+ *     mov %rbp  %r11   (r11指向当前堆栈）
+ * looplabel:
+ *     test %rax,%rax
+ *     jz endlabel
+ *     mov (%r11) %r11
+ *     sub $1 ,%rax
+ *     jmp looplabel:
+ * endlabel:
+ *     mov 8(%r11),%rax    （到这里就取得了rbp的帧地址，也就是祖先函数的返回地址）
+ *     pop %r11
+ * 最终看下来，这个函数并不是返回祖先函数的入口地址，而是返回祖先函数的调用点地址
+ * @param node
+ */
 void CodeGen::emit_builtin_return_address(const std::shared_ptr<DataStruct::Node> &node) {
     push("r11");
     if (node->args.size() != 1)
@@ -931,8 +1042,17 @@ void CodeGen::emit_builtin_return_address(const std::shared_ptr<DataStruct::Node
     pop("r11");
 }
 
-// Set the register class for parameter passing to RAX.
-// 0 is INTEGER, 1 is SSE, 2 is MEMORY.
+/**
+ * 当参数是指针类型的时候这个才适用，这个函数看起来是设置传递给rax的参数的类型所使用的寄存器类型
+ * 根据node->getTy()->ptr的kind来决定是rax所传递的参数是什么类型的
+ * （1）DataStruct::TYPE_KIND::KIND_STRUCT
+ * mov $2 %eax  MEMORY
+ * （2）floattype
+ * mov $1 %eax  SSE
+ * （3）other
+ * mov $0 %eax   integer
+ * @param node
+ */
 void CodeGen::emit_builtin_reg_class(const std::shared_ptr<DataStruct::Node> &node) {
     auto arg = node->args.front();
     if (arg.getTy()->kind != DataStruct::TYPE_KIND::KIND_PTR)
@@ -946,6 +1066,16 @@ void CodeGen::emit_builtin_reg_class(const std::shared_ptr<DataStruct::Node> &no
         emit("mov $0, #eax");
 }
 
+/**
+ * va_start，可变参数的处理，参数只能为1
+ * push %rcx
+ * movl $numgp*8, (%rax)    (首先保存一共有多少个参数，然后下面才是参数）
+ * movl $48+numfp*16, 4(%rax)
+ * lea -176(%rbp),%rcx   (有可变参数的时候，rbp下端176字节保存的都是参数寄存器（6个通用寄存器，8个sse寄存器）的值）
+ * mov %rcx,16(%rax)    （这里只所以是16,是因为函数参数不能只包含一个...，应该至少包含一个参数
+ * pop %rcx
+ * @param node
+ */
 void CodeGen::emit_builtin_va_start(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     if (node->args.size() != 1)
@@ -958,7 +1088,11 @@ void CodeGen::emit_builtin_va_start(const std::shared_ptr<DataStruct::Node> &nod
     emit("mov #rcx, 16(#rax)");
     pop("rcx");
 }
-
+/**
+ *处理__builtin_return_address，__builtin_reg_class，__builtin_va_start这3个内嵌函数
+ * @param node
+ * @return
+ */
 bool CodeGen::maybe_emit_builtin(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     if ("__builtin_return_address" == node->fname) {
@@ -975,7 +1109,13 @@ bool CodeGen::maybe_emit_builtin(const std::shared_ptr<DataStruct::Node> &node) 
     }
     return false;
 }
-
+/**
+ * 函数参数分类
+ * @param ints 保存类int类型，最多6个，多的放入rest中
+ * @param floats 保存floattype参数，最多8个，多个放入rest中
+ * @param rest 存放KIND_STRUCT以及上面两类多余的参数
+ * @param args 函数参数
+ */
 void CodeGen::classify_args(std::vector<std::shared_ptr<DataStruct::Node>> &ints,
                    std::vector<std::shared_ptr<DataStruct::Node>> &floats,
                    std::vector<std::shared_ptr<DataStruct::Node>> & rest,
@@ -992,7 +1132,11 @@ void CodeGen::classify_args(std::vector<std::shared_ptr<DataStruct::Node>> &ints
             (ireg++ < imax) ? ints.push_back(std::make_shared<DataStruct::Node>(v)) : rest.push_back(std::make_shared<DataStruct::Node>(v));
     }
 }
-
+/**
+ * 保存通用寄存器的内容和SSE寄存器的内容到栈中
+ * @param nints 要保存的通用寄存器的数目，不超过6
+ * @param nfloats 要保存的SSE寄存器的数目，不超过8
+ */
 void CodeGen::save_arg_regs(int nints, int nfloats) {
     SAVE;
     if (nints>6)
@@ -1004,7 +1148,11 @@ void CodeGen::save_arg_regs(int nints, int nfloats) {
     for (int i = 1; i < nfloats; i++)
         push_xmm(i);
 }
-
+/**
+ * 从栈中恢复通用寄存器和SSE寄存器的内容
+ * @param nints 要保存的通用寄存器的数目，不超过6
+ * @param nfloats 要保存的SSE寄存器的数目，不超过8
+ */
 void CodeGen::restore_arg_regs(int nints, int nfloats) {
     SAVE;
     for (int i = nfloats - 1; i > 0; i--)
@@ -1012,7 +1160,11 @@ void CodeGen::restore_arg_regs(int nints, int nfloats) {
     for (int i = nints - 1; i >= 0; i--)
         pop(REGS[i]);
 }
-
+/**
+ * 设置参数，
+ * @param vals
+ * @return vals中的参数占用的总字节数
+ */
 int CodeGen::emit_args(const std::vector<std::shared_ptr<DataStruct::Node>> &vals) {
     SAVE;
     int r = 0;
@@ -1032,25 +1184,38 @@ int CodeGen::emit_args(const std::vector<std::shared_ptr<DataStruct::Node>> &val
     }
     return r;
 }
-
+/**
+ * 从栈中恢复通用寄存器的内容
+ * @param nints 恢复的通用寄存器的数目
+ */
 void CodeGen::pop_int_args(int nints) {
     SAVE;
     for (int i = nints - 1; i >= 0; i--)
         pop(REGS[i]);
 }
-
+/**
+ * 从栈中恢复SSE寄存器的内容
+ * @param nfloats 恢复的SSE寄存器的数目
+ */
 void CodeGen::pop_float_args(int nfloats) {
     SAVE;
     for (int i = nfloats - 1; i >= 0; i--)
         pop_xmm(i);
 }
-
+/**
+ * 若ty是bool类型，则进行zero拓展
+ * movzx #al, #rax
+ * @param ty
+ */
 void CodeGen::maybe_booleanize_retval(const std::shared_ptr<DataStruct::Type> &ty) {
     if (ty->kind == DataStruct::TYPE_KIND::KIND_BOOL) {
         emit("movzx #al, #rax");
     }
 }
-
+/**
+ * 函数调用，注意函数是否含有可变参数，以及寄存器的调用规范
+ * @param node
+ */
 void CodeGen::emit_func_call(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     int opos = stackpos;
@@ -1100,7 +1265,12 @@ void CodeGen::emit_func_call(const std::shared_ptr<DataStruct::Node> &node) {
     if (opos!=stackpos)
         Error::error("opos!=stackpos");
 }
-
+/**
+ * 如果有初始化node，那么会处理该函数，否则直接返回
+ * 处理流程：
+ *  把未初始化的部分初始化为0,然后用初始化相应的节点去初始化lvalue所在内存处的值
+ * @param node
+ */
 void CodeGen::emit_decl(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     if (node->declinit.empty())
@@ -1138,14 +1308,22 @@ void CodeGen::emit_ternary(const std::shared_ptr<DataStruct::Node> &node) {
         emit_label(ne);
     }
 }
-
+/**
+ * jmp label
+ * @param node
+ */
 void CodeGen::emit_goto(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     if (node->newlabel.empty())
         Error::error("node->newlabel empty");
     emit_jmp(node->newlabel);
 }
-
+/**
+ * 分析返回值，可能会转化为bool类型
+ * leave
+ * ret
+ * @param node
+ */
 void CodeGen::emit_return(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     if (node->retval) {
@@ -1160,7 +1338,20 @@ void CodeGen::emit_compound_stmt(const std::shared_ptr<DataStruct::Node> &node) 
     for(auto&e:node->stmts)
         emit_expr(e);
 }
-
+/**
+ * (endlabel=make_label)
+ *      emit_expr(node->left)
+ *      test %rax,%rax
+ *      mov &0, %rax
+ *      je endlabel
+ *      emit_expr(node->left)
+ *      test %rax,%rax
+ *      mov &0,%rax
+ *      je endlabel
+ *      mov $1,label
+ * endlabel:
+ * @param node
+ */
 void CodeGen::emit_logand(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     auto end = _parser->make_label();
@@ -1318,7 +1509,10 @@ void CodeGen::emit_zero(int size) {
     for (; size >= 4; size -= 4) emit(".long 0");
     for (; size > 0; size--)     emit(".byte 0");
 }
-
+//int diff = node->initoff - off;
+//if (diff<0)
+//Error::error("diff should greater than 0");
+//emit_zero(diff);
 void CodeGen::emit_padding(const std::shared_ptr<DataStruct::Node> &node, int off) {
     SAVE;
     int diff = node->initoff - off;
@@ -1326,7 +1520,20 @@ void CodeGen::emit_padding(const std::shared_ptr<DataStruct::Node> &node, int of
         Error::error("diff should greater than 0");
     emit_zero(diff);
 }
-
+/**
+ * 初始化.data,根据operand的kind分类
+ * （1）AST_LVAR
+ *      .data depth+1
+ *      label:
+ *      do_emit_data(operand->lvarinit, operand->getTy()->size, 0, depth + 1);
+ *      .data depth
+ *      .quad label
+ * (2) AST_GVAR
+ *      .quad operand->glabel
+ * 其他情况，error
+ * @param operand
+ * @param depth
+ */
 void CodeGen::emit_data_addr(const std::shared_ptr<DataStruct::Node> &operand, int depth) {
     switch (operand->getKind()) {
         case DataStruct::AST_TYPE::AST_LVAR: {
@@ -1345,7 +1552,16 @@ void CodeGen::emit_data_addr(const std::shared_ptr<DataStruct::Node> &operand, i
             Error::error("internal error");
     }
 }
-
+/**
+ *      .data depth+1
+ *      label:
+ *      .string s
+ *      .data depth
+ *      .quad label
+ *      完全不知道这个depth是干嘛的
+ * @param s
+ * @param depth
+ */
 void CodeGen::emit_data_charptr(const std::string &s, int depth) {
     auto label = _parser->make_label();
     emit(".data %d", depth + 1);
@@ -1381,16 +1597,24 @@ void CodeGen::emit_data_primtype(const std::shared_ptr<DataStruct::Type> &ty,
         case DataStruct::TYPE_KIND::KIND_LONG:
         case DataStruct::TYPE_KIND::KIND_LLONG:
         case DataStruct::TYPE_KIND::KIND_PTR:
+            /**
+             * 下面是几种特殊的情况：
+             * （1）标签地址   .quad   val->newlabel
+             * （2）字符串
+             * （3）AST_GVAR   .quad val->glabel
+             * （4）取地址
+             * 分析val是什么类型的对象
+             */
             bool is_char_ptr;
             if (val->getKind() == DataStruct::AST_TYPE::OP_LABEL_ADDR) {
-                emit(".quad %s", val->newlabel);
+                emit(".quad %s", val->newlabel);         //quad保存label
                 break;
             }
             is_char_ptr = (val->unop->getTy()->kind == DataStruct::TYPE_KIND::KIND_ARRAY && val->unop->getTy()->ptr->kind == DataStruct::TYPE_KIND::KIND_CHAR);
             if (is_char_ptr) {
-                emit_data_charptr(val->unop->sval, depth);
+                emit_data_charptr(val->unop->sval, depth);                 //字符串
             } else if (val->getKind() == DataStruct::AST_TYPE::AST_GVAR) {
-                emit(".quad %s", val->glabel);
+                emit(".quad %s", val->glabel);                  //全局
             } else {
                 std::shared_ptr<DataStruct::Node> base = nullptr;
                 int v = _parser->eval_intexpr(val, &base);
@@ -1412,7 +1636,15 @@ void CodeGen::emit_data_primtype(const std::shared_ptr<DataStruct::Type> &ty,
             Error::error("don't know how to handle\n  <%s>\n  <%s>", _parser->ty2s(ty), _parser->node2s(val));
     }
 }
-
+/**
+ * 分析初始化node
+ * （1）位域对象
+ * 位域对象是连续的，因而需要分析出所有的连续位域的值，组合成一个data
+ * @param inits
+ * @param size
+ * @param off   这个应该是多个全局对象的偏移问题
+ * @param depth  不知道这个是干嘛的
+ */
 void CodeGen::do_emit_data(const std::vector<std::shared_ptr<DataStruct::Node>> &inits, int size, int off, int depth) {
     SAVE;
     for (int i = 0; i < inits.size() && 0 < size; i++) {
@@ -1456,7 +1688,15 @@ void CodeGen::do_emit_data(const std::vector<std::shared_ptr<DataStruct::Node>> 
     }
     emit_zero(size);
 }
-
+/**
+ *     .data depth
+ * .global glabel(如果不是static)
+ *     glabel:
+ *
+ * @param v
+ * @param off
+ * @param depth
+ */
 void CodeGen::emit_data(const std::shared_ptr<DataStruct::Node> &v, int off, int depth) {
     SAVE;
     emit(".data %d", depth);
@@ -1465,7 +1705,12 @@ void CodeGen::emit_data(const std::shared_ptr<DataStruct::Node> &v, int off, int
     emit_noindent("%s:", v->declvar->glabel);
     do_emit_data(v->declinit, v->declvar->getTy()->size, off, depth);
 }
-
+/**
+ *      .data
+ *  .global glabel(node不是static）
+ *      .lcomm glabel, size
+ * @param v
+ */
 void CodeGen::emit_bss(const std::shared_ptr<DataStruct::Node> &v) {
     SAVE;
     emit(".data");

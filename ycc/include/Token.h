@@ -296,13 +296,13 @@ namespace DataStruct {
         // 函数调用或声明
         std::string fname;
         // Function call
-        std::vector<Node> args;
+        std::vector<std::shared_ptr<Node>> args;
         std::shared_ptr<Type> ftype;
         // Function pointer or function designator
         std::shared_ptr<Node> fptr;
         // Function declaration
-        std::vector<Node> params;
-        std::vector<Node> localvars;
+        std::vector<std::shared_ptr<Node>> params;
+        std::vector<std::shared_ptr<Node>> localvars;
         std::shared_ptr<Node> body;
         // 声明
         std::shared_ptr<Node> declvar;

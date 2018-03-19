@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/yk/compiler/ycc/include/Lex.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Lex.h
 fstream
 -
 iostream
@@ -16,15 +16,15 @@ cstring
 unordered_map
 -
 error.h
-/home/yk/compiler/ycc/include/error.h
+/media/yk/e/projects/compiler/compiler/ycc/include/error.h
 buffer.h
-/home/yk/compiler/ycc/include/buffer.h
+/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h
 enumerate.h
-/home/yk/compiler/ycc/include/enumerate.h
+/media/yk/e/projects/compiler/compiler/ycc/include/enumerate.h
 Token.h
-/home/yk/compiler/ycc/include/Token.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Token.h
 
-/home/yk/compiler/ycc/include/Memory.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Memory.h
 memory
 -
 vector
@@ -34,9 +34,9 @@ iostream
 unordered_map
 -
 Token.h
-/home/yk/compiler/ycc/include/Token.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Token.h
 
-/home/yk/compiler/ycc/include/Token.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Token.h
 cstdio
 -
 ctime
@@ -56,9 +56,9 @@ unordered_map
 iostream
 -
 enumerate.h
-/home/yk/compiler/ycc/include/enumerate.h
+/media/yk/e/projects/compiler/compiler/ycc/include/enumerate.h
 
-/home/yk/compiler/ycc/include/buffer.h
+/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h
 zconf.h
 -
 string
@@ -70,7 +70,7 @@ string
 sstream
 -
 
-/home/yk/compiler/ycc/include/code_gen.h
+/media/yk/e/projects/compiler/compiler/ycc/include/code_gen.h
 string
 -
 vector
@@ -78,33 +78,33 @@ vector
 memory
 -
 parser.h
-/home/yk/compiler/ycc/include/parser.h
+/media/yk/e/projects/compiler/compiler/ycc/include/parser.h
 
-/home/yk/compiler/ycc/include/colors.h
+/media/yk/e/projects/compiler/compiler/ycc/include/colors.h
 
-/home/yk/compiler/ycc/include/encode.h
+/media/yk/e/projects/compiler/compiler/ycc/include/encode.h
 cstdint
 -
 string
 -
 
-/home/yk/compiler/ycc/include/enumerate.h
+/media/yk/e/projects/compiler/compiler/ycc/include/enumerate.h
 keyword.inc
-/home/yk/compiler/ycc/include/keyword.inc
+/media/yk/e/projects/compiler/compiler/ycc/include/keyword.inc
 
-/home/yk/compiler/ycc/include/error.h
+/media/yk/e/projects/compiler/compiler/ycc/include/error.h
 string
 -
 iostream
 -
 Token.h
-/home/yk/compiler/ycc/include/Token.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Token.h
 colors.h
-/home/yk/compiler/ycc/include/colors.h
+/media/yk/e/projects/compiler/compiler/ycc/include/colors.h
 
-/home/yk/compiler/ycc/include/keyword.inc
+/media/yk/e/projects/compiler/compiler/ycc/include/keyword.inc
 
-/home/yk/compiler/ycc/include/macro.h
+/media/yk/e/projects/compiler/compiler/ycc/include/macro.h
 unordered_map
 -
 list
@@ -112,17 +112,17 @@ list
 algorithm
 -
 Lex.h
-/home/yk/compiler/ycc/include/Lex.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Lex.h
 
-/home/yk/compiler/ycc/include/parser.h
+/media/yk/e/projects/compiler/compiler/ycc/include/parser.h
 macro.h
-/home/yk/compiler/ycc/include/macro.h
+/media/yk/e/projects/compiler/compiler/ycc/include/macro.h
 
-/home/yk/compiler/ycc/include/path.h
+/media/yk/e/projects/compiler/compiler/ycc/include/path.h
 string
 -
 
-/home/yk/compiler/ycc/include/utils.h
+/media/yk/e/projects/compiler/compiler/ycc/include/utils.h
 cstdlib
 -
 ostream
@@ -134,97 +134,99 @@ memory
 vector
 -
 Token.h
-/home/yk/compiler/ycc/include/Token.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Token.h
 
-/home/yk/compiler/ycc/main.cpp
+/media/yk/e/projects/compiler/compiler/ycc/main.cpp
 iostream
 -
+algorithm
+-
 include/Token.h
-/home/yk/compiler/ycc/include/Token.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Token.h
 include/buffer.h
-/home/yk/compiler/ycc/include/buffer.h
+/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h
 include/Lex.h
-/home/yk/compiler/ycc/include/Lex.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Lex.h
 test/funcTest.h
-/home/yk/compiler/ycc/test/funcTest.h
+/media/yk/e/projects/compiler/compiler/ycc/test/funcTest.h
 include/utils.h
-/home/yk/compiler/ycc/include/utils.h
+/media/yk/e/projects/compiler/compiler/ycc/include/utils.h
 
-/home/yk/compiler/ycc/src/Lex.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/Lex.cpp
 sys/stat.h
 -
 ../include/Lex.h
-/home/yk/compiler/ycc/include/Lex.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Lex.h
 ../include/encode.h
-/home/yk/compiler/ycc/include/encode.h
+/media/yk/e/projects/compiler/compiler/ycc/include/encode.h
 ../include/keyword.inc
-/home/yk/compiler/ycc/include/keyword.inc
+/media/yk/e/projects/compiler/compiler/ycc/include/keyword.inc
 ../include/keyword.inc
-/home/yk/compiler/ycc/include/keyword.inc
+/media/yk/e/projects/compiler/compiler/ycc/include/keyword.inc
 ../include/keyword.inc
-/home/yk/compiler/ycc/include/keyword.inc
+/media/yk/e/projects/compiler/compiler/ycc/include/keyword.inc
 
-/home/yk/compiler/ycc/src/Memory.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/Memory.cpp
 ../include/Memory.h
-/home/yk/compiler/ycc/include/Memory.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Memory.h
 
-/home/yk/compiler/ycc/src/Token.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/Token.cpp
 ../include/Token.h
-/home/yk/compiler/ycc/include/Token.h
+/media/yk/e/projects/compiler/compiler/ycc/include/Token.h
 ../include/error.h
-/home/yk/compiler/ycc/include/error.h
+/media/yk/e/projects/compiler/compiler/ycc/include/error.h
 
-/home/yk/compiler/ycc/src/buffer.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/buffer.cpp
 cstring
 -
 iomanip
 -
 ../include/buffer.h
-/home/yk/compiler/ycc/include/buffer.h
+/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h
 
-/home/yk/compiler/ycc/src/code_gen.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/code_gen.cpp
 sys/stat.h
 -
 ../include/code_gen.h
-/home/yk/compiler/ycc/include/code_gen.h
+/media/yk/e/projects/compiler/compiler/ycc/include/code_gen.h
 
-/home/yk/compiler/ycc/src/encode.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/encode.cpp
 ../include/encode.h
-/home/yk/compiler/ycc/include/encode.h
+/media/yk/e/projects/compiler/compiler/ycc/include/encode.h
 ../include/error.h
-/home/yk/compiler/ycc/include/error.h
+/media/yk/e/projects/compiler/compiler/ycc/include/error.h
 
-/home/yk/compiler/ycc/src/error.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/error.cpp
 iostream
 -
 memory
 -
 ../include/error.h
-/home/yk/compiler/ycc/include/error.h
+/media/yk/e/projects/compiler/compiler/ycc/include/error.h
 ../include/utils.h
-/home/yk/compiler/ycc/include/utils.h
+/media/yk/e/projects/compiler/compiler/ycc/include/utils.h
 ../include/buffer.h
-/home/yk/compiler/ycc/include/buffer.h
+/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h
 
-/home/yk/compiler/ycc/src/macro.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/macro.cpp
 libgen.h
 -
 ../include/path.h
-/home/yk/compiler/ycc/include/path.h
+/media/yk/e/projects/compiler/compiler/ycc/include/path.h
 ../include/parser.h
-/home/yk/compiler/ycc/include/parser.h
+/media/yk/e/projects/compiler/compiler/ycc/include/parser.h
 
-/home/yk/compiler/ycc/src/parser.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/parser.cpp
 ../include/parser.h
-/home/yk/compiler/ycc/include/parser.h
+/media/yk/e/projects/compiler/compiler/ycc/include/parser.h
 ../include/encode.h
-/home/yk/compiler/ycc/include/encode.h
+/media/yk/e/projects/compiler/compiler/ycc/include/encode.h
 ../include/buffer.h
-/home/yk/compiler/ycc/include/buffer.h
+/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h
 ../include/keyword.inc
-/home/yk/compiler/ycc/include/keyword.inc
+/media/yk/e/projects/compiler/compiler/ycc/include/keyword.inc
 
-/home/yk/compiler/ycc/src/path.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/path.cpp
 iostream
 -
 cstring
@@ -232,13 +234,13 @@ cstring
 zconf.h
 -
 ../include/path.h
-/home/yk/compiler/ycc/include/path.h
+/media/yk/e/projects/compiler/compiler/ycc/include/path.h
 ../include/buffer.h
-/home/yk/compiler/ycc/include/buffer.h
+/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h
 ../include/error.h
-/home/yk/compiler/ycc/include/error.h
+/media/yk/e/projects/compiler/compiler/ycc/include/error.h
 
-/home/yk/compiler/ycc/src/utils.cpp
+/media/yk/e/projects/compiler/compiler/ycc/src/utils.cpp
 string
 -
 zconf.h
@@ -254,19 +256,19 @@ algorithm
 wait.h
 -
 ../include/buffer.h
-/home/yk/compiler/ycc/include/buffer.h
+/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h
 ../include/error.h
-/home/yk/compiler/ycc/include/error.h
+/media/yk/e/projects/compiler/compiler/ycc/include/error.h
 ../include/utils.h
-/home/yk/compiler/ycc/include/utils.h
+/media/yk/e/projects/compiler/compiler/ycc/include/utils.h
 ../include/code_gen.h
-/home/yk/compiler/ycc/include/code_gen.h
+/media/yk/e/projects/compiler/compiler/ycc/include/code_gen.h
 
-/home/yk/compiler/ycc/test/funcTest.cpp
+/media/yk/e/projects/compiler/compiler/ycc/test/funcTest.cpp
 funcTest.h
-/home/yk/compiler/ycc/test/funcTest.h
+/media/yk/e/projects/compiler/compiler/ycc/test/funcTest.h
 ../include/path.h
-/home/yk/compiler/ycc/include/path.h
+/media/yk/e/projects/compiler/compiler/ycc/include/path.h
 dirent.h
 -
 cstring
@@ -276,11 +278,11 @@ fstream
 unordered_set
 -
 ../include/utils.h
-/home/yk/compiler/ycc/include/utils.h
+/media/yk/e/projects/compiler/compiler/ycc/include/utils.h
 ../include/code_gen.h
-/home/yk/compiler/ycc/include/code_gen.h
+/media/yk/e/projects/compiler/compiler/ycc/include/code_gen.h
 
-/home/yk/compiler/ycc/test/funcTest.h
+/media/yk/e/projects/compiler/compiler/ycc/test/funcTest.h
 string
 -
 

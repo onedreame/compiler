@@ -8,38 +8,38 @@
 		<Option virtualFolders="CMake Files\;"/>
 		<Build>
 			<Target title="all">
-				<Option working_dir="/home/yk/compiler/ycc/cmake-build-debug"/>
+				<Option working_dir="/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="rebuild_cache">
-				<Option working_dir="/home/yk/compiler/ycc/cmake-build-debug"/>
+				<Option working_dir="/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="edit_cache">
-				<Option working_dir="/home/yk/compiler/ycc/cmake-build-debug"/>
+				<Option working_dir="/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug"/>
 				<Option type="4"/>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="ycc">
-				<Option output="/home/yk/compiler/ycc/cmake-build-debug/ycc" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/yk/compiler/ycc/cmake-build-debug"/>
+				<Option output="/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/ycc" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
@@ -54,15 +54,15 @@
 					<Add directory="/usr/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 ycc"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 ycc"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 			<Target title="ycc/fast">
-				<Option output="/home/yk/compiler/ycc/cmake-build-debug/ycc" prefix_auto="0" extension_auto="0"/>
-				<Option working_dir="/home/yk/compiler/ycc/cmake-build-debug"/>
+				<Option output="/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/ycc" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug"/>
 				<Option object_output="./"/>
 				<Option type="1"/>
 				<Option compiler="gcc"/>
@@ -77,104 +77,104 @@
 					<Add directory="/usr/include"/>
 				</Compiler>
 				<MakeCommands>
-					<Build command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 ycc/fast"/>
-					<CompileFile command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
-					<Clean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
-					<DistClean command="/usr/bin/make -j4 -f &quot;/home/yk/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 ycc/fast"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/home/yk/compiler/ycc/include/Lex.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/Lex.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/Memory.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/Memory.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/Token.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/Token.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/buffer.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/buffer.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/code_gen.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/code_gen.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/colors.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/colors.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/configuration.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/configuration.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/encode.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/encode.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/enumerate.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/enumerate.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/error.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/error.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/keyword.inc">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/keyword.inc">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/macro.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/macro.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/parser.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/parser.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/path.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/path.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/stddef.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/stddef.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/include/utils.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/include/utils.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/main.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/main.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/Lex.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/Lex.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/Memory.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/Memory.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/Token.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/Token.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/buffer.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/buffer.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/code_gen.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/code_gen.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/encode.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/encode.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/error.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/error.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/macro.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/macro.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/parser.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/parser.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/path.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/path.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/src/utils.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/src/utils.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/test/funcTest.cpp">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/test/funcTest.cpp">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/test/funcTest.h">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/test/funcTest.h">
 			<Option target="ycc"/>
 		</Unit>
-		<Unit filename="/home/yk/compiler/ycc/CMakeLists.txt">
+		<Unit filename="/media/yk/e/projects/compiler/compiler/ycc/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>
 	</Project>

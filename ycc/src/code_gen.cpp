@@ -301,7 +301,7 @@ void CodeGen::emit_gsave(const std::string &varname, const std::shared_ptr<DataS
         Error::error("type is array");
     maybe_convert_bool(ty);
     auto reg = get_int_reg(ty, 'a');
-    auto addr = varname+"+"+std::to_string(off)+"(%%rip)";
+    auto addr = varname+"+"+std::to_string(off)+"(%rip)";
     maybe_emit_bitshift_save(ty, addr);
     emit("mov #%s, %s", reg, addr);
 }
@@ -314,7 +314,7 @@ void CodeGen::emit_lsave(const std::shared_ptr<DataStruct::Type> &ty, int off) {
     } else {
         maybe_convert_bool(ty);
         auto reg = get_int_reg(ty, 'a');
-        auto addr = std::to_string(off)+"(%%rbp)";
+        auto addr = std::to_string(off)+"(%rbp)";
         maybe_emit_bitshift_save(ty, addr);
         emit("mov #%s, %s", reg, addr);
     }
@@ -426,6 +426,7 @@ void CodeGen::emit_store(const std::shared_ptr<DataStruct::Node> &var) {
         default: Error::error("internal error");
     }
 }
+
 void CodeGen::emit_to_bool(const std::shared_ptr<DataStruct::Type> &ty) {
     SAVE;
     if (_parser->is_flotype(ty)) {
@@ -522,6 +523,7 @@ void CodeGen::emit_binop_float_arith(const std::shared_ptr<DataStruct::Node> &no
     pop_xmm(0);
     emit("%s #xmm1, #xmm0", op);
 }
+
 void CodeGen::emit_load_convert(const std::shared_ptr<DataStruct::Type> &to, const std::shared_ptr<DataStruct::Type> &from) {
     SAVE;
     if (_parser->is_inttype(from) && to->kind == DataStruct::TYPE_KIND::KIND_FLOAT)
@@ -540,6 +542,10 @@ void CodeGen::emit_load_convert(const std::shared_ptr<DataStruct::Type> &to, con
     else if (_parser->is_inttype(to))
         emit_toint(from);
 }
+/**
+ * leave
+ * ret
+ */
 void CodeGen::emit_ret() {
     SAVE;
     emit("leave");
@@ -639,11 +645,6 @@ void CodeGen::emit_copy_struct(const std::shared_ptr<DataStruct::Node> &left,
     pop("r11");
     pop("rcx");
 }
-int cmpinit(const void *x, const void *y) {
-    Node *a = *(Node **)x;
-    Node *b = *(Node **)y;
-    return a->initoff - b->initoff;
-}
 
 void CodeGen::emit_fill_holes(const std::vector<std::shared_ptr<DataStruct::Node>> &inits, int off, int totalsize) {
     // If at least one of the fields in a variable are initialized,
@@ -652,7 +653,8 @@ void CodeGen::emit_fill_holes(const std::vector<std::shared_ptr<DataStruct::Node
     std::vector<std::shared_ptr<DataStruct::Node>> buf;
     for (auto&e:inits)
         buf.push_back(e);
-//    qsort(buf, len, sizeof(Node *), cmpinit);
+    using eletype=decltype(buf[0]);
+    std::sort(buf.begin(),buf.end(),[](eletype e,eletype e1){ return e1->initoff-e->initoff;});
 
     int lastend = 0;
     for (auto&node:buf) {
@@ -749,11 +751,14 @@ void CodeGen::emit_literal(const std::shared_ptr<DataStruct::Node> &node) {
             break;
         }
         case DataStruct::TYPE_KIND::KIND_ARRAY: {
-            if (!node->slabel.empty()) {
+            if (node->slabel.empty()) {
                 node->slabel = _parser->make_label();
                 emit_noindent(".data");
                 emit_label(node->slabel);
-                emit(".string \"%s\"", Utils::quote_cstring_len(node->sval.c_str(), node->getTy()->size - 1));
+                char content[1024];
+                auto length=node->sval.copy(content,node->sval.size(),0);
+                content[length]='\0';
+                emit(".string \"%s\"", Utils::quote_cstring_len(content, length));
                 emit_noindent(".text");
             }
             emit("lea %s(#rip), #rax", node->slabel);
@@ -824,8 +829,8 @@ void CodeGen::maybe_print_source_line(const std::string &file, int line) {
             return;
         source_lines[file]=lines;
     }
-    int len=0;
-    emit_nostack("# %s",lines[line-1]);
+
+    emit_nostack("# %s",source_lines[file][line-1]);
 }
 /**
  * 输出.file .loc
@@ -840,7 +845,7 @@ void CodeGen::maybe_print_source_loc(const std::shared_ptr<DataStruct::Node> &no
         fileno=source_files.size()+1;
         source_files[file]=fileno;
         emit(".file %d \"%s\"", fileno, Utils::quote_cstring_len(file.c_str(),file.size()));
-    }
+    }else fileno=source_files[file];
     auto loc = Utils::format(".loc %d %d 0", fileno, node->getSourceloc().line);
     if (loc != last_loc) {
         emit("%s", loc);
@@ -863,8 +868,8 @@ void CodeGen::emit_gvar(const std::shared_ptr<DataStruct::Node> node) {
 void CodeGen::emit_builtin_return_address(const std::shared_ptr<DataStruct::Node> &node) {
     push("r11");
     if (node->args.size() != 1)
-        Error::error("args !=1");
-    emit_expr(std::make_shared<DataStruct::Node>(node->args.front()));
+        Error::error("__builtin_return_address's args number should be 1");
+    emit_expr(node->args.front());
     auto loop = _parser->make_label();
     auto end = _parser->make_label();
     emit("mov #rbp, #r11");
@@ -883,9 +888,9 @@ void CodeGen::emit_builtin_return_address(const std::shared_ptr<DataStruct::Node
 // 0 is INTEGER, 1 is SSE, 2 is MEMORY.
 void CodeGen::emit_builtin_reg_class(const std::shared_ptr<DataStruct::Node> &node) {
     auto arg = node->args.front();
-    if (arg.getTy()->kind != DataStruct::TYPE_KIND::KIND_PTR)
+    if (arg->getTy()->kind != DataStruct::TYPE_KIND::KIND_PTR)
         Error::error("arg is not ptr");
-    auto ty = arg.getTy()->ptr;
+    auto ty = arg->getTy()->ptr;
     if (ty->kind == DataStruct::TYPE_KIND::KIND_STRUCT)
         emit("mov $2, #eax");
     else if (_parser->is_flotype(ty))
@@ -898,7 +903,7 @@ void CodeGen::emit_builtin_va_start(const std::shared_ptr<DataStruct::Node> &nod
     SAVE;
     if (node->args.size() != 1)
         Error::error("emit_builtin_va_start,args size is not 1");
-    emit_expr(std::make_shared<DataStruct::Node>(node->args.front()));
+    emit_expr(node->args.front());
     push("rcx");
     emit("movl $%d, (#rax)", numgp * 8);
     emit("movl $%d, 4(#rax)", 48 + numfp * 16);
@@ -924,23 +929,34 @@ bool CodeGen::maybe_emit_builtin(const std::shared_ptr<DataStruct::Node> &node) 
     return false;
 }
 
+/**
+ * 函数参数分类
+ * @param ints 保存类int类型，最多6个，多的放入rest中
+ * @param floats 保存floattype参数，最多8个，多个放入rest中
+ * @param rest 存放KIND_STRUCT以及上面两类多余的参数
+ * @param args 函数参数
+ */
 void CodeGen::classify_args(std::vector<std::shared_ptr<DataStruct::Node>> &ints,
                    std::vector<std::shared_ptr<DataStruct::Node>> &floats,
                    std::vector<std::shared_ptr<DataStruct::Node>> & rest,
-                   const std::vector<DataStruct::Node> & args) {
+                   const std::vector<std::shared_ptr<DataStruct::Node>> & args) {
     SAVE;
     int ireg = 0, xreg = 0;
     int imax = 6, xmax = 8;
     for (auto& v:args) {
-        if (v.getTy()->kind == DataStruct::TYPE_KIND::KIND_STRUCT)
-            rest.push_back(std::make_shared<DataStruct::Node>(v));
-        else if (_parser->is_flotype(v.getTy()))
-            (xreg++ < xmax) ? floats.push_back(std::make_shared<DataStruct::Node>(v)) : rest.push_back(std::make_shared<DataStruct::Node>(v));
+        if (v->getTy()->kind == DataStruct::TYPE_KIND::KIND_STRUCT)
+            rest.push_back(v);
+        else if (_parser->is_flotype(v->getTy()))
+            (xreg++ < xmax) ? floats.push_back(v): rest.push_back(v);
         else
-            (ireg++ < imax) ? ints.push_back(std::make_shared<DataStruct::Node>(v)) : rest.push_back(std::make_shared<DataStruct::Node>(v));
+            (ireg++ < imax) ? ints.push_back(v) : rest.push_back(v);
     }
 }
-
+/**
+ * 保存通用寄存器的内容和SSE寄存器的内容到栈中
+ * @param nints 要保存的通用寄存器的数目，不超过6
+ * @param nfloats 要保存的SSE寄存器的数目，不超过8
+ */
 void CodeGen::save_arg_regs(int nints, int nfloats) {
     SAVE;
     if (nints>6)
@@ -952,7 +968,11 @@ void CodeGen::save_arg_regs(int nints, int nfloats) {
     for (int i = 1; i < nfloats; i++)
         push_xmm(i);
 }
-
+/**
+ * 从栈中恢复通用寄存器和SSE寄存器的内容
+ * @param nints 要保存的通用寄存器的数目，不超过6
+ * @param nfloats 要保存的SSE寄存器的数目，不超过8
+ */
 void CodeGen::restore_arg_regs(int nints, int nfloats) {
     SAVE;
     for (int i = nfloats - 1; i > 0; i--)
@@ -960,7 +980,11 @@ void CodeGen::restore_arg_regs(int nints, int nfloats) {
     for (int i = nints - 1; i >= 0; i--)
         pop(REGS[i]);
 }
-
+/**
+ * 设置参数，
+ * @param vals
+ * @return vals中的参数占用的总字节数
+ */
 int CodeGen::emit_args(const std::vector<std::shared_ptr<DataStruct::Node>> &vals) {
     SAVE;
     int r = 0;
@@ -980,25 +1004,38 @@ int CodeGen::emit_args(const std::vector<std::shared_ptr<DataStruct::Node>> &val
     }
     return r;
 }
-
+/**
+ * 从栈中恢复通用寄存器的内容
+ * @param nints 恢复的通用寄存器的数目
+ */
 void CodeGen::pop_int_args(int nints) {
     SAVE;
     for (int i = nints - 1; i >= 0; i--)
         pop(REGS[i]);
 }
-
+/**
+ * 从栈中恢复SSE寄存器的内容
+ * @param nfloats 恢复的SSE寄存器的数目
+ */
 void CodeGen::pop_float_args(int nfloats) {
     SAVE;
     for (int i = nfloats - 1; i >= 0; i--)
         pop_xmm(i);
 }
-
+/**
+ * 若ty是bool类型，则进行zero拓展
+ * movzx #al, #rax
+ * @param ty
+ */
 void CodeGen::maybe_booleanize_retval(const std::shared_ptr<DataStruct::Type> &ty) {
     if (ty->kind == DataStruct::TYPE_KIND::KIND_BOOL) {
         emit("movzx #al, #rax");
     }
 }
-
+/**
+ * 函数调用，注意函数是否含有可变参数，以及寄存器的调用规范
+ * @param node
+ */
 void CodeGen::emit_func_call(const std::shared_ptr<DataStruct::Node> &node) {
     SAVE;
     int opos = stackpos;
@@ -1248,7 +1285,7 @@ void CodeGen::emit_expr(const std::shared_ptr<DataStruct::Node> &node) {
         case DataStruct::AST_TYPE::AND: emit_bitand(node); return;
         case DataStruct::AST_TYPE::OR: emit_bitor(node); return;
         case DataStruct::AST_TYPE::NEG: emit_bitnot(node); return;
-        case DataStruct::AST_TYPE: :OP_LOGAND: emit_logand(node); return;
+        case DataStruct::AST_TYPE::OP_LOGAND: emit_logand(node); return;
         case DataStruct::AST_TYPE::OP_LOGOR:  emit_logor(node); return;
         case DataStruct::AST_TYPE::OP_CAST:   emit_cast(node); return;
         case DataStruct::AST_TYPE::COMMA: emit_comma(node); return;
@@ -1499,7 +1536,7 @@ void CodeGen::emit_func_prologue(std::shared_ptr<DataStruct::Node> func) {
     int off = 0;
     std::vector<std::shared_ptr<DataStruct::Node>> tv;
     for(auto &e:func->params)
-        tv.push_back(std::make_shared<DataStruct::Node>(e));
+        tv.push_back(e);
     if (func->getTy()->hasva) {
         set_reg_nums(tv);
         off -= emit_regsave_area();
@@ -1509,11 +1546,11 @@ void CodeGen::emit_func_prologue(std::shared_ptr<DataStruct::Node> func) {
 
     int localarea = 0;
     for(auto&v:func->localvars){
-        int size = align(v.getTy()->size, 8);
+        int size = align(v->getTy()->size, 8);
         if(size%8)
-            Error::error("%s is not aligned to base 8",_parser->node2s(std::make_shared<DataStruct::Node>(v)));
+            Error::error("%s is not aligned to base 8",_parser->node2s(v));
         off -= size;
-        v.loff = off;
+        v->loff = off;
         localarea += size;
     }
     if (localarea) {

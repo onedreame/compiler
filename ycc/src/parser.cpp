@@ -172,7 +172,7 @@ void Parser::do_node2s(std::string &b, const std::shared_ptr<DataStruct::Node> &
             for (int i = 0; i < node->args.size(); i++) {
                 if (i > 0)
                     b += ",";
-                b += node2s(std::make_shared<DataStruct::Node>(node->args[i]));
+                b += node2s(node->args[i]);
             }
             b += ")";
             break;
@@ -186,8 +186,8 @@ void Parser::do_node2s(std::string &b, const std::shared_ptr<DataStruct::Node> &
             for (int i = 0; i < node->params.size(); i++) {
                 if (i > 0)
                     b += ",";
-                Utils::buf_printf(b, "%s %s", ty2s(node->params[i].getTy()),
-                           node2s(std::make_shared<DataStruct::Node>(node->params[i])));
+                Utils::buf_printf(b, "%s %s", ty2s(node->params[i]->getTy()),
+                           node2s(node->params[i]));
             }
             b += ")";
             do_node2s(b, node->body);
@@ -469,7 +469,7 @@ std::shared_ptr<DataStruct::Node> Parser::ast_lvar(const std::shared_ptr<DataStr
     if (localenv)
         localenv->operator[](name)= r;
     if (localvars)
-        localvars->push_back(*r);
+        localvars->push_back(r);
     return r;
 }
 //global value: unlike local value,global value has additional global name
@@ -641,7 +641,7 @@ std::shared_ptr<DataStruct::Node> Parser::ast_static_lvar(const std::shared_ptr<
  */
 std::shared_ptr<DataStruct::Node> Parser::ast_funcall(const std::shared_ptr<DataStruct::Type> &ftype,
                                               const std::string &fname,
-                                              const std::vector<DataStruct::Node> &args){
+                                              const std::vector<std::shared_ptr<DataStruct::Node>> &args){
     auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_FUNCALL,ftype->rettype,sl);
     node->fname=fname;
     node->args=args;
@@ -655,7 +655,7 @@ std::shared_ptr<DataStruct::Node> Parser::ast_funcall(const std::shared_ptr<Data
  * @return 该node
  */
 std::shared_ptr<DataStruct::Node> Parser::ast_funcptr_call(std::shared_ptr<DataStruct::Node>&fptr,
-                                                   const std::vector<DataStruct::Node> &args) {
+                                                   const std::vector<std::shared_ptr<DataStruct::Node>> &args) {
     if (fptr->getTy()->kind!=DataStruct::TYPE_KIND::KIND_PTR)
         Error::error("%s is not a func pointer",ty2s(fptr->getTy()));
     if (fptr->getTy()->ptr->kind!=DataStruct::TYPE_KIND::KIND_FUNC)
@@ -676,9 +676,9 @@ std::shared_ptr<DataStruct::Node> Parser::ast_funcptr_call(std::shared_ptr<DataS
  */
 std::shared_ptr<DataStruct::Node> Parser::ast_func(const std::shared_ptr<DataStruct::Type> &ty,
                                             const std::string &fname,
-                                            const std::vector<DataStruct::Node>&params,
+                                            const std::vector<std::shared_ptr<DataStruct::Node>>&params,
                                             const std::shared_ptr<DataStruct::Node> &body,
-                                            const std::vector<DataStruct::Node> &localvars) {
+                                            const std::vector<std::shared_ptr<DataStruct::Node>> &localvars) {
     auto node=std::make_shared<DataStruct::Node>(DataStruct::AST_TYPE::AST_FUNC,ty,sl);
     node->fname=fname;
     node->params=params;
@@ -1011,12 +1011,12 @@ void Parser::skip_parentheses(std::vector<DataStruct::Token>&buf){
     }
 }
 //params不是普通的变量，因而不应该保存在localenv中
-std::vector<DataStruct::Node> Parser::read_oldstyle_param_args() {
+Parser::vec_share Parser::read_oldstyle_param_args() {
     CHECK_CPP();
     CHECK_LEX();
     auto orig = localenv;
     localenv = nullptr;
-    std::vector<DataStruct::Node> r;
+    Parser::vec_share r;
     for (;;) {
         if (lex->is_keyword(macro->peek_token(), lex->get_keywords("{")))
             break;
@@ -1030,19 +1030,19 @@ std::vector<DataStruct::Node> Parser::read_oldstyle_param_args() {
 //at the begining,we set all params type as int,so here,we fix this problem.
 //@params:placeholder param, int type
 //@declvars: the true type we parse
-void Parser::update_oldstyle_param_type(std::vector<DataStruct::Node>  *params, std::vector<DataStruct::Node> &declvars) {
+void Parser::update_oldstyle_param_type(Parser::vec_share *params, Parser::vec_share &declvars) {
     for (auto&decl:declvars) {
-        if (decl.getKind()!=DataStruct::AST_TYPE::AST_DECL)
-            Error::error("%s is not a declation type.",node2s(std::make_shared<DataStruct::Node>(decl)));
-        auto var = decl.declvar;
+        if (decl->getKind()!=DataStruct::AST_TYPE::AST_DECL)
+            Error::error("%s is not a declation type.",node2s(decl));
+        auto var = decl->declvar;
         if (var->getKind()!=DataStruct::AST_TYPE::AST_LVAR)
-            Error::error("%s is not a local var type",node2s(decl.declvar));
+            Error::error("%s is not a local var type",node2s(decl->declvar));
         for(auto& param:*params){
-            if(param.getKind()!=DataStruct::AST_TYPE::AST_LVAR)
-                Error::error("%s is not a local var type",node2s(std::make_shared<DataStruct::Node>(param)));
-            if (param.varname!= var->varname)
+            if(param->getKind()!=DataStruct::AST_TYPE::AST_LVAR)
+                Error::error("%s is not a local var type",node2s(param));
+            if (param->varname!= var->varname)
                 continue;
-            param.setTy(var->getTy());
+            param->setTy(var->getTy());
             goto found;
         }
         Error::error("missing parameter: %s", var->varname);
@@ -1050,21 +1050,21 @@ void Parser::update_oldstyle_param_type(std::vector<DataStruct::Node>  *params, 
     }
 }
 
-void Parser::read_oldstyle_param_type(std::vector<DataStruct::Node> *params) {
+void Parser::read_oldstyle_param_type(Parser::vec_share *params) {
     auto vars = read_oldstyle_param_args();
     update_oldstyle_param_type(params, vars);
 }
 //get all parameters types,without name.
-std::vector<std::shared_ptr<DataStruct::Type>> Parser::param_types(std::vector<DataStruct::Node> *params) {
+std::vector<std::shared_ptr<DataStruct::Type>> Parser::param_types(Parser::vec_share *params) {
     std::vector<std::shared_ptr<DataStruct::Type>> r;
     for (auto&param:*params) {
-        r.emplace_back(param.getTy());
+        r.emplace_back(param->getTy());
     }
     return r;
 }
 
 //读取声明和函数定义
-std::shared_ptr<std::vector<DataStruct::Node>> Parser::read_toplevels()
+std::shared_ptr<Parser::vec_share > Parser::read_toplevels()
 {
     toplevels->clear();
     CHECK_CPP();
@@ -1080,7 +1080,7 @@ std::shared_ptr<std::vector<DataStruct::Node>> Parser::read_toplevels()
 //    macro->iter_macros();
 }
 
-DataStruct::Node Parser::read_funcdef() {
+std::shared_ptr<DataStruct::Node> Parser::read_funcdef() {
     CHECK_LEX();
     CHECK_CPP();
     DataStruct::QUALITIFIER sclass;
@@ -1090,7 +1090,7 @@ DataStruct::Node Parser::read_funcdef() {
     gotos.clear();
     labels.clear();
     std::string name;
-    std::vector<DataStruct::Node> params;
+    Parser::vec_share params;
     auto functype = read_declarator(&name, basetype, &params, DataStruct::DECL_TYPE::DECL_BODY);
     if (functype->oldstyle) {
         if (params.empty())
@@ -1104,7 +1104,7 @@ DataStruct::Node Parser::read_funcdef() {
     auto r = read_func_body(functype, name, params);
     backfill_labels();
     localenv = nullptr;
-    return *r;
+    return r;
 }
 void Parser::backfill_labels(){
     for (auto& src:gotos) {
@@ -1127,11 +1127,11 @@ void Parser::backfill_labels(){
  * @param params 参数
  * @return 该函数node
  */
-std::shared_ptr<DataStruct::Node> Parser::read_func_body(const std::shared_ptr<DataStruct::Type>&functype, const std::string &fname, std::vector<DataStruct::Node> &params){
+std::shared_ptr<DataStruct::Node> Parser::read_func_body(const std::shared_ptr<DataStruct::Type>&functype, const std::string &fname, Parser::vec_share &params){
     decltype(localenv) tmp=std::make_shared<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>();
     scope[tmp]=localenv;
     localenv = tmp;
-    localvars=std::make_shared<std::vector<DataStruct::Node>>();
+    localvars=std::make_shared<std::vector<std::shared_ptr<DataStruct::Node>>>();
     current_func_type = functype;
     auto funcname = ast_string(DataStruct::ENCODE::ENC_NONE, fname);
     localenv->operator[]("__func__") = funcname;
@@ -1286,16 +1286,10 @@ std::shared_ptr<DataStruct::Node> Parser::read_funcall(std::shared_ptr<DataStruc
     if (fp->getKind() == DataStruct::AST_TYPE::AST_ADDR && fp->unop->getKind() == DataStruct::AST_TYPE::AST_FUNCDESG) {
         auto desg = fp->unop;
         auto args = read_func_args(desg->getTy()->params);
-        std::vector<DataStruct::Node> margs;
-        for (auto&e:args)
-            margs.push_back(*e);
-        return ast_funcall(desg->getTy(), desg->fname, margs);
+        return ast_funcall(desg->getTy(), desg->fname, args);
     }
     auto args = read_func_args(fp->getTy()->ptr->params);
-    std::vector<DataStruct::Node> margs;
-    for (auto&e:args)
-        margs.emplace_back(*e);
-    return ast_funcptr_call(fp, margs);
+    return ast_funcptr_call(fp, args);
 }
 void Parser::read_static_assert(){
     CHECK_CPP();CHECK_LEX();
@@ -1322,7 +1316,7 @@ void Parser::read_static_local_var(const std::shared_ptr<DataStruct::Type>& ty, 
         init = read_decl_init(ty);
         localenv = orig;
     }
-    toplevels->emplace_back(*ast_decl(var, init));
+    toplevels->emplace_back(ast_decl(var, init));
 }
 //6.7 Declarations,
 //paramsters type:  6.7.1 At most, one storage-class specifier may be given in the declaration specifiers in a
@@ -1331,7 +1325,7 @@ void Parser::read_static_local_var(const std::shared_ptr<DataStruct::Type>& ty, 
 //(2) static, can't be global
 //(3)local
 //(4)global,may be extern
-void Parser::read_decl(std::vector<DataStruct::Node>* block, bool isglobal){
+void Parser::read_decl(Parser::vec_share * block, bool isglobal){
     CHECK_LEX();
     CHECK_CPP();
     DataStruct::QUALITIFIER sclass = DataStruct::QUALITIFIER::S_PLACEHOLDER;
@@ -1354,11 +1348,11 @@ void Parser::read_decl(std::vector<DataStruct::Node>* block, bool isglobal){
             ensure_not_void(ty);
             auto var = isglobal ? ast_gvar(ty, name) : ast_lvar(ty, name);
             if (macro->next(DataStruct::AST_TYPE::ASSIGN)) {
-                block->emplace_back(*ast_decl(var, read_decl_init(ty)));
+                block->emplace_back(ast_decl(var, read_decl_init(ty)));
             } else if (sclass != DataStruct::QUALITIFIER::S_EXTERN && ty->kind != DataStruct::TYPE_KIND::KIND_FUNC) {
 //      不需要保存extern变量与函数
 //      6.7.6.3 p2 The only storage-class specifier that shall occur in a parameter declaration is register
-                block->emplace_back(*ast_decl(var, std::vector<std::shared_ptr<DataStruct::Node>>()));
+                block->emplace_back(ast_decl(var, std::vector<std::shared_ptr<DataStruct::Node>>()));
             }
         }
         if (macro->next(lex->get_keywords(";")))
@@ -1805,7 +1799,7 @@ void Parser::squash_unnamed_struct(std::vector<std::pair<std::string,std::shared
 }
 // C11 6.7.6: Declarators
 std::shared_ptr<DataStruct::Type> Parser::read_declarator(std::string *name,const std::shared_ptr<DataStruct::Type>&basetype,
-                                                  std::vector<DataStruct::Node>*params,DataStruct::DECL_TYPE type){
+                                                          Parser::vec_share*params,DataStruct::DECL_TYPE type){
     CHECK_CPP();
     CHECK_LEX();
     //C11 6.7.6.1.3 Function declarators
@@ -1837,7 +1831,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_declarator(std::string *name,cons
     lex->retreat_token(tok);
     return read_declarator_tail(basetype, params);
 }
-std::shared_ptr<DataStruct::Type> Parser::read_declarator_tail(const std::shared_ptr<DataStruct::Type>&basetype, std::vector<DataStruct::Node>*params){
+std::shared_ptr<DataStruct::Type> Parser::read_declarator_tail(const std::shared_ptr<DataStruct::Type>&basetype, Parser::vec_share*params){
     CHECK_LEX();
     CHECK_CPP();
     if (macro->next(lex->get_keywords("[")))
@@ -1864,7 +1858,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_declarator_array(const std::share
     return make_array_type(t, len);
 }
 //6.7.6.3 p1 A function declarator shall not specify a return type that is a function type or an array type.
-std::shared_ptr<DataStruct::Type> Parser::read_declarator_func(const std::shared_ptr<DataStruct::Type>&returntype, std::vector<DataStruct::Node>*params){
+std::shared_ptr<DataStruct::Type> Parser::read_declarator_func(const std::shared_ptr<DataStruct::Type>&returntype, Parser::vec_share*params){
     if (returntype->kind == DataStruct::TYPE_KIND::KIND_FUNC)
         Error::error("function returning a function");
     if (returntype->kind == DataStruct::TYPE_KIND::KIND_ARRAY)
@@ -1872,7 +1866,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_declarator_func(const std::shared
     return read_func_param_list(params, returntype);
 }
 //C11 6.7.6.3
-std::shared_ptr<DataStruct::Type> Parser::read_func_param_list(std::vector<DataStruct::Node>*param, const std::shared_ptr<DataStruct::Type>&rettype){
+std::shared_ptr<DataStruct::Type> Parser::read_func_param_list(Parser::vec_share*param, const std::shared_ptr<DataStruct::Type>&rettype){
     CHECK_CPP();
     CHECK_LEX();
     DataStruct::Token tok = macro->read_token();
@@ -1912,7 +1906,7 @@ std::shared_ptr<DataStruct::Type> Parser::read_func_param_list(std::vector<DataS
 }
 //paramtypes: 参数类型
 //paramvars: 命名参数
-void Parser::read_declarator_params(std::vector<DataStruct::Type>&paramtypes, std::vector<DataStruct::Node>*paramvars, bool &ellipsis){
+void Parser::read_declarator_params(std::vector<DataStruct::Type>&paramtypes, Parser::vec_share*paramvars, bool &ellipsis){
     CHECK_LEX();
     CHECK_CPP();
     bool typeonly = paramvars== nullptr;
@@ -1931,7 +1925,7 @@ void Parser::read_declarator_params(std::vector<DataStruct::Type>&paramtypes, st
         ensure_not_void(ty);
         paramtypes.push_back(*ty);
         if (!typeonly)
-            paramvars->emplace_back( *(ast_lvar(ty, name)));
+            paramvars->emplace_back( ast_lvar(ty, name));
         tok = macro->read_token();
         if (lex->is_keyword(tok, lex->get_keywords(")")))
             return;
@@ -1960,14 +1954,14 @@ std::shared_ptr<DataStruct::Type> Parser::read_func_param(std::string& name,bool
     return ty;
 }
 //K&R style的函数列表中没有具体类型，其类型在括号外部定义，因而可以暂时假设参数列表中的参数均是int类型。
-void Parser::read_declarator_params_oldstyle(std::vector<DataStruct::Node>*vars){
+void Parser::read_declarator_params_oldstyle(Parser::vec_share*vars){
     CHECK_CPP();
     CHECK_LEX();
     for (;;) {
         const DataStruct::Token &tok = macro->read_token();
         if (tok.kind != DataStruct::TOKEN_TYPE::TIDENT)
             Error::errort(tok, "identifier expected, but got %s", lex->tok2s(tok));
-        vars->emplace_back(*ast_lvar(TYPE_INT, *tok.sval));
+        vars->emplace_back(ast_lvar(TYPE_INT, *tok.sval));
         if (macro->next(lex->get_keywords(")")))
             return;
         if (!macro->next(lex->get_keywords(",")))
@@ -2989,7 +2983,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_compound_stmt(){
     auto orig = localenv;
     localenv=std::make_shared<std::unordered_map<std::string,std::shared_ptr<DataStruct::Node>>>();
     scope[localenv]=orig;
-    std::vector<DataStruct::Node> list ;
+    Parser::vec_share list ;
     for (;;) {
         if (lex->is_keyword(macro->peek_token(),lex->get_keywords("}")))
         {
@@ -2999,11 +2993,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_compound_stmt(){
         read_decl_or_stmt(list);
     }
     localenv = orig;
-    std::vector<std::shared_ptr<DataStruct::Node>> slist;
-    slist.reserve(list.size());
-    for(auto &e:list)
-        slist.push_back(std::make_shared<DataStruct::Node>(e));
-    return ast_compound_stmt(&slist);
+    return ast_compound_stmt(&list);
 }
 //syntax:
 //compound-statement:
@@ -3014,7 +3004,7 @@ std::shared_ptr<DataStruct::Node> Parser::read_compound_stmt(){
 //  block-item:
 //     declaration
 //     statement
-void Parser::read_decl_or_stmt(std::vector<DataStruct::Node> &list){
+void Parser::read_decl_or_stmt(Parser::vec_share &list){
     CHECK_CPP();
     CHECK_LEX();
     auto tok = macro->peek_token();
@@ -3028,7 +3018,7 @@ void Parser::read_decl_or_stmt(std::vector<DataStruct::Node> &list){
     } else {
         auto stmt = read_stmt();
         if (stmt)
-            list.push_back(*stmt);
+            list.push_back(stmt);
     }
 }
 //statement:
@@ -3169,13 +3159,9 @@ std::shared_ptr<DataStruct::Node> Parser::read_opt_decl_or_stmt(){
     CHECK_LEX();
     if (macro->next(lex->get_keywords(";")))
         return nullptr;
-    std::vector<DataStruct::Node> list;
+    Parser::vec_share list;
     read_decl_or_stmt(list);
-    std::vector<std::shared_ptr<DataStruct::Node>> slist;
-    slist.reserve(list.size());
-    for(auto&e:list)
-        slist.emplace_back(std::make_shared<DataStruct::Node>(e));
-    return ast_compound_stmt(&slist);
+    return ast_compound_stmt(&list);
 }
 //expresion-2 float隐式转化成bool
 std::shared_ptr<DataStruct::Node> Parser::read_for_stmt(){

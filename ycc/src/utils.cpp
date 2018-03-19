@@ -154,7 +154,7 @@ namespace Utils{
             asmfile = !outfile.empty() ? outfile : replace_suffix(base(infile), 's');
         } else {
             char temp[256];
-            asmfile = "/tmp/8ccXXXXXX.s";
+            asmfile = "/tmp/yccXXXXXX.s";
             auto length=asmfile.copy(temp,asmfile.size(),0);
             temp[length]='\0';
             if (!mkstemps(temp, 2))
@@ -202,9 +202,9 @@ namespace Utils{
         auto top=_parser->read_toplevels();
         for(auto &e: *top){
             if (dumpast)
-                std::cout<<_parser->node2s(std::make_shared<DataStruct::Node>(e));
+                std::cout<<_parser->node2s(e);
             else
-                _codegen->emit_toplevel(std::make_shared<DataStruct::Node>(e));
+                _codegen->emit_toplevel(e);
         }
         if (fp.is_open()) fp.close();
         if (!dumpast && !dumpasm) {
@@ -216,7 +216,7 @@ namespace Utils{
 //                char texec[20];
 //                auto length=std::string("as").copy(texec,2,0);
 //                texec[length]='\0';
-                execlp(std::string("as").c_str(), "as", "-o", outfile, "-c", asmfile, (char *) NULL);
+                execlp(std::string("gcc").c_str(), "gcc", "-o", outfile, "-c", asmfile, (char *) NULL);
                 perror("execl failed");
             }
             int status;

@@ -155,7 +155,7 @@ private:
     void classify_args(std::vector<std::shared_ptr<DataStruct::Node>> &ints,
                        std::vector<std::shared_ptr<DataStruct::Node>> &floats,
                        std::vector<std::shared_ptr<DataStruct::Node>> & rest,
-                       const std::vector<DataStruct::Node> & args);
+                       const std::vector<std::shared_ptr<DataStruct::Node>> & args);
     void save_arg_regs(int nints, int nfloats);
     void restore_arg_regs(int nints, int nfloats);
     int emit_args(const std::vector<std::shared_ptr<DataStruct::Node>> &vals);

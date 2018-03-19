@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "include/Token.h"
 #include "include/buffer.h"
 #include "include/Lex.h"
@@ -32,6 +33,10 @@ private:
     };
 };
 int T::a=1;
+struct TT{
+    int a;
+};
+
 namespace Utils{
     std::shared_ptr<Lex> _lex= nullptr;
     std::shared_ptr<MacroPreprocessor> _cpp= nullptr;

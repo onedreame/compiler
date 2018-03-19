@@ -4,19 +4,19 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/yk/compiler/ycc/main.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/main.cpp.o"
-  "/home/yk/compiler/ycc/src/Lex.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/Lex.cpp.o"
-  "/home/yk/compiler/ycc/src/Memory.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/Memory.cpp.o"
-  "/home/yk/compiler/ycc/src/Token.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/Token.cpp.o"
-  "/home/yk/compiler/ycc/src/buffer.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/buffer.cpp.o"
-  "/home/yk/compiler/ycc/src/code_gen.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/code_gen.cpp.o"
-  "/home/yk/compiler/ycc/src/encode.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/encode.cpp.o"
-  "/home/yk/compiler/ycc/src/error.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/error.cpp.o"
-  "/home/yk/compiler/ycc/src/macro.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/macro.cpp.o"
-  "/home/yk/compiler/ycc/src/parser.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/parser.cpp.o"
-  "/home/yk/compiler/ycc/src/path.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/path.cpp.o"
-  "/home/yk/compiler/ycc/src/utils.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/utils.cpp.o"
-  "/home/yk/compiler/ycc/test/funcTest.cpp" "/home/yk/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/test/funcTest.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/main.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/main.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/Lex.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/Lex.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/Memory.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/Memory.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/Token.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/Token.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/buffer.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/buffer.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/code_gen.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/code_gen.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/encode.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/encode.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/error.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/error.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/macro.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/macro.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/parser.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/parser.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/path.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/path.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/src/utils.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/src/utils.cpp.o"
+  "/media/yk/e/projects/compiler/compiler/ycc/test/funcTest.cpp" "/media/yk/e/projects/compiler/compiler/ycc/cmake-build-debug/CMakeFiles/ycc.dir/test/funcTest.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
