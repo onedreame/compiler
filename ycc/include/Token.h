@@ -328,7 +328,7 @@ namespace DataStruct {
         SourceLoc sourceloc{"",-1};
         NODETYPE tok;
 //        Node& copyUnion(const Node& r);
-//        void clear();
+
     };
 
 }
